@@ -28,6 +28,39 @@
         details > summary::-webkit-details-marker { display: none; }
         .summary-row { display: flex; align-items: center; gap: .5rem; }
         .summary-row h3 { margin: 0; font-size: 1.1rem; color: var(--muted); }
+    .chart-header { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+    .chart-header h5 { margin: 0; }
+    .chart-header .button.secondary { margin: 0; padding: .25rem .5rem; font-size: .8rem; }
+    article:fullscreen { background: var(--card); padding: 1rem; }
+    article:fullscreen canvas { height: 82vh !important; }
+
+        /* Responsivo */
+        @media (max-width: 1024px) {
+            .toolbar { grid-template-columns: repeat(3, minmax(140px, 1fr)); }
+            .grid-auto { grid-template-columns: repeat(6, 1fr); }
+            .grid-auto > article { grid-column: span 6 !important; }
+            canvas { height: 220px !important; }
+            .chart-large { height: 280px !important; }
+        }
+        @media (max-width: 640px) {
+            header { margin: .75rem 0 1rem; }
+            .toolbar { grid-template-columns: 1fr; }
+            .cards { grid-template-columns: repeat(2, 1fr); }
+            .grid-auto { grid-template-columns: 1fr; }
+            .grid-auto > article { grid-column: 1 / -1 !important; }
+            .chart-header { flex-wrap: wrap; gap: .25rem; }
+            .chart-header .button.secondary { margin-left: auto; }
+            canvas { height: 200px !important; }
+            .chart-large { height: 240px !important; }
+        }
+
+        /* Chips de filtros */
+        .filters-summary { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; margin: .5rem 0 1rem; color: var(--muted); }
+        .filters-summary .label { margin-right: .25rem; }
+        .chip { display: inline-flex; align-items: center; gap: .25rem; padding: .25rem .6rem; border-radius: 999px; border: 1px solid #334155; background: #0b1220; color: #cbd5e1; font-size: .85rem; }
+        .chip b { color: #e5e7eb; font-weight: 600; }
+        .chip--primary { border-color: #3b82f6; background: rgba(59,130,246,.15); color: #dbeafe; }
+        .chip--muted { opacity: .9; }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
@@ -35,6 +68,39 @@
 <main class="container">
     <header>
         <h2>Gráficas y KPIs</h2>
+        @php
+            // Construye un resumen legible de los filtros activos
+            $aplicados = [];
+            if (!empty($filters['day'])) {
+                $aplicados[] = 'Día: ' . $filters['day'];
+            }
+            if (!empty($filters['from']) && !empty($filters['to'])) {
+                $aplicados[] = 'Rango: ' . $filters['from'] . ' a ' . $filters['to'];
+            } elseif (!empty($filters['from'])) {
+                $aplicados[] = 'Desde: ' . $filters['from'];
+            } elseif (!empty($filters['to'])) {
+                $aplicados[] = 'Hasta: ' . $filters['to'];
+            }
+            if (!empty($filters['week'])) {
+                $aplicados[] = 'Semana: ' . $filters['week'];
+            }
+            if (!empty($filters['month'])) {
+                $aplicados[] = 'Mes: ' . $filters['month'];
+            }
+            if (!empty($filters['turno'])) {
+                $mapTurno = ['1' => 'A', '2' => 'B', '3' => 'C'];
+                $aplicados[] = 'Turno: ' . ($mapTurno[$filters['turno']] ?? $filters['turno']);
+            }
+            if (!empty($filters['area_id'])) {
+                $areaObj = $areas->firstWhere('id', (int) $filters['area_id']);
+                $aplicados[] = 'Área: ' . ($areaObj->name ?? $filters['area_id']);
+            }
+            if (!empty($filters['linea_id'])) {
+                $lineaObj = $lineas->firstWhere('id', (int) $filters['linea_id']);
+                $aplicados[] = 'Línea: ' . ($lineaObj->name ?? $filters['linea_id']);
+            }
+            $textoFiltros = count($aplicados) ? implode(' • ', $aplicados) : 'Vista general (sin filtros)';
+        @endphp
         <details>
           <summary>
             <div class="summary-row">
@@ -103,6 +169,47 @@
           </form>
         </details>
     </header>
+    <div class="filters-summary">
+        <span class="label">Mostrando:</span>
+        @php $hasAny=false; @endphp
+        @if(!empty($filters['day']))
+            @php $hasAny=true; @endphp
+            <span class="chip"><b>Día</b> {{ $filters['day'] }}</span>
+        @endif
+        @if(!empty($filters['from']) && !empty($filters['to']))
+            @php $hasAny=true; @endphp
+            <span class="chip"><b>Rango</b> {{ $filters['from'] }} – {{ $filters['to'] }}</span>
+        @elseif(!empty($filters['from']))
+            @php $hasAny=true; @endphp
+            <span class="chip"><b>Desde</b> {{ $filters['from'] }}</span>
+        @elseif(!empty($filters['to']))
+            @php $hasAny=true; @endphp
+            <span class="chip"><b>Hasta</b> {{ $filters['to'] }}</span>
+        @endif
+        @if(!empty($filters['week']))
+            @php $hasAny=true; @endphp
+            <span class="chip"><b>Semana</b> {{ $filters['week'] }}</span>
+        @endif
+        @if(!empty($filters['month']))
+            @php $hasAny=true; @endphp
+            <span class="chip"><b>Mes</b> {{ $filters['month'] }}</span>
+        @endif
+        @if(!empty($filters['turno']))
+            @php $hasAny=true; $mapTurno=['1'=>'A','2'=>'B','3'=>'C']; @endphp
+            <span class="chip"><b>Turno</b> {{ $mapTurno[$filters['turno']] ?? $filters['turno'] }}</span>
+        @endif
+        @if(!empty($filters['area_id']))
+            @php $hasAny=true; $areaObj = $areas->firstWhere('id', (int) $filters['area_id']); @endphp
+            <span class="chip chip--primary"><b>Área</b> {{ $areaObj->name ?? $filters['area_id'] }}</span>
+        @endif
+        @if(!empty($filters['linea_id']))
+            @php $hasAny=true; $lineaObj = $lineas->firstWhere('id', (int) $filters['linea_id']); @endphp
+            <span class="chip chip--primary"><b>Línea</b> {{ $lineaObj->name ?? $filters['linea_id'] }}</span>
+        @endif
+        @if(!$hasAny)
+            <span class="chip chip--muted">Vista general (sin filtros)</span>
+        @endif
+    </div>
 
     <section class="cards">
         <article>
@@ -121,35 +228,35 @@
 
     <section class="grid-auto">
         <article style="grid-column: span 3">
-            <h5>Top 10 líneas por tiempo total (h)</h5>
+            <div class="chart-header"><h5>Top 10 líneas por tiempo total (h)</h5><button class="button secondary" onclick="toggleFullscreen('chartTopLineas')">Pantalla completa</button></div>
             <canvas id="chartTopLineas"></canvas>
         </article>
         <article style="grid-column: span 3">
-            <h5>Top 10 máquinas por tiempo total (h)</h5>
+            <div class="chart-header"><h5>Top 10 máquinas por tiempo total (h)</h5><button class="button secondary" onclick="toggleFullscreen('chartTopMaquinas')">Pantalla completa</button></div>
             <canvas id="chartTopMaquinas"></canvas>
         </article>
         <article style="grid-column: span 3">
-            <h5>Tiempo total por turno (h)</h5>
+            <div class="chart-header"><h5>Tiempo total por turno (h)</h5><button class="button secondary" onclick="toggleFullscreen('chartPorTurno')">Pantalla completa</button></div>
             <canvas id="chartPorTurno"></canvas>
         </article>
         <article style="grid-column: span 3">
-            <h5>MTTR por máquina (h)</h5>
+            <div class="chart-header"><h5>MTTR por máquina (h)</h5><button class="button secondary" onclick="toggleFullscreen('chartMttrMaquina')">Pantalla completa</button></div>
             <canvas id="chartMttrMaquina"></canvas>
         </article>
         <article style="grid-column: span 6">
-            <h5>MTTR diario (h) con meta</h5>
+            <div class="chart-header"><h5>MTTR diario (h) con meta</h5><button class="button secondary" onclick="toggleFullscreen('chartSerieMttr')">Pantalla completa</button></div>
             <canvas id="chartSerieMttr" class="chart-large"></canvas>
         </article>
         <article style="grid-column: span 6">
-            <h5>MTBF diario (h) con meta</h5>
+            <div class="chart-header"><h5>MTBF diario (h) con meta</h5><button class="button secondary" onclick="toggleFullscreen('chartSerieMtbf')">Pantalla completa</button></div>
             <canvas id="chartSerieMtbf" class="chart-large"></canvas>
         </article>
         <article style="grid-column: span 6">
-            <h5>Reportes abiertos por día</h5>
+            <div class="chart-header"><h5>Reportes abiertos por día</h5><button class="button secondary" onclick="toggleFullscreen('chartAbiertosDia')">Pantalla completa</button></div>
             <canvas id="chartAbiertosDia"></canvas>
         </article>
         <article style="grid-column: span 6">
-            <h5>MTBF por máquina (h)</h5>
+            <div class="chart-header"><h5>MTBF por máquina (h)</h5><button class="button secondary" onclick="toggleFullscreen('chartMtbfMaquina')">Pantalla completa</button></div>
             <canvas id="chartMtbfMaquina"></canvas>
         </article>
     </section>
@@ -158,23 +265,55 @@
 <script>
 const M = @json($metrics);
 
+// Pantalla completa para un artículo contenedor del canvas
+function toggleFullscreen(canvasId) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const article = canvas.closest('article') || canvas;
+    if (!document.fullscreenElement) {
+        if (article.requestFullscreen) article.requestFullscreen();
+        else if (article.webkitRequestFullscreen) article.webkitRequestFullscreen();
+        else if (article.msRequestFullscreen) article.msRequestFullscreen();
+    } else {
+        if (document.fullscreenElement === article) {
+            if (document.exitFullscreen) document.exitFullscreen();
+            else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+            else if (document.msExitFullscreen) document.msExitFullscreen();
+        } else {
+            const exit = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+            if (exit) {
+                Promise.resolve(exit.call(document)).finally(() => {
+                    article.requestFullscreen && article.requestFullscreen();
+                });
+            } else {
+                article.requestFullscreen && article.requestFullscreen();
+            }
+        }
+    }
+}
+
+// Forzar re-cálculo de tamaño de Chart.js al entrar/salir de fullscreen
+document.addEventListener('fullscreenchange', () => {
+    setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
+});
+
 function barChart(id, labels, data, label, color){
     const ctx = document.getElementById(id);
-    new Chart(ctx, {
+    return new Chart(ctx, {
         type: 'bar',
         data: { labels, datasets: [{ label, data, backgroundColor: color }] },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             scales: { y: { beginAtZero: true } },
-            plugins: { legend: { position: 'top', labels: { boxWidth: 10 }}},
+            plugins: { legend: { position: 'top', labels: { boxWidth: 10 }} }
         }
     });
 }
 
 function lineChart(id, labels, series, suggestedMax){
     const ctx = document.getElementById(id);
-    new Chart(ctx, {
+    return new Chart(ctx, {
         type: 'line',
         data: {
             labels,
