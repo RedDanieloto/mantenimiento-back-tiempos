@@ -92,7 +92,7 @@ class GraficasController extends Controller
             });
         }
 
-        // Ventana 7:00 → 7:00 (aplica sobre 'inicio')
+        // Ventana 7:00 → 7:00 
         if ($request->filled('day')) {
             $start = Carbon::parse((string)$request->input('day'), $this->tz)->setTime(7, 0, 0);
             $end   = (clone $start)->addDay();
@@ -105,30 +105,29 @@ class GraficasController extends Controller
                 $end   = Carbon::parse((string)$toDay, $this->tz)->setTime(7, 0, 0)->addDay();
                 $q->whereBetween('inicio', [$start, $end]);
             }
-        } elseif ($request->filled('week')) { // ISO week: YYYY-Www
+        } elseif ($request->filled('week')) { 
             $weekStr = (string)$request->input('week');
             if (preg_match('/^(\d{4})-W(\d{2})$/', $weekStr, $m)) {
                 $year = (int)$m[1];
                 $week = (int)$m[2];
                 $start = Carbon::now($this->tz)->setISODate($year, $week, 1)->setTime(7, 0, 0); // Lunes 7:00
-                $end   = (clone $start)->addDays(7); // hasta el siguiente lunes 7:00
+                $end   = (clone $start)->addDays(7); 
                 $q->whereBetween('inicio', [$start, $end]);
             }
-        } elseif ($request->filled('month')) { // YYYY-MM
+        } elseif ($request->filled('month')) { 
             $month = $request->input('month');
             try {
                 $start = Carbon::parse($month.'-01', $this->tz)->setTime(7, 0, 0);
                 $end   = (clone $start)->addMonth();
                 $q->whereBetween('inicio', [$start, $end]);
             } catch (\Throwable $e) {
-                // ignora formato inválido
+              
             }
         }
     }
 
     private function computeMetrics(Request $request, $reportes): array
     {
-        // Helpers
     $secToHours = fn($s) => $s === null ? null : max(0, round($s / 3600, 2));
         $turnoLabel = function ($t) {
             $t = (string)$t;
@@ -147,7 +146,7 @@ class GraficasController extends Controller
             ->values();
         $mttrAvg = $mttrValues->isNotEmpty() ? $mttrValues->avg() : 0;
 
-        // MTBF promedio (tiempo entre fallas, usando uptime fin → siguiente inicio)
+        // MTBF promedio 
         $mtbfPerMachine = [];
         $byMachine = $reportes->groupBy(fn($r) => optional($r->maquina)->id);
         foreach ($byMachine as $machineId => $rows) {

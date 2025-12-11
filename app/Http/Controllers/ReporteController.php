@@ -11,7 +11,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
-// Websockets removed: no broadcasting events
+// Websockets fuera
 
 
 class ReporteController extends Controller
@@ -79,7 +79,6 @@ class ReporteController extends Controller
             $q->whereIn('tecnico_employee_number', explode(',', $request->string('tecnico_employee_number')));
         }
 
-        // Presencia de datos
         if ($request->filled('has_tecnico')) {
             $flag = filter_var($request->string('has_tecnico'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
             if ($flag === true) $q->whereNotNull('tecnico_employee_number');
@@ -91,7 +90,6 @@ class ReporteController extends Controller
             elseif ($flag === false) $q->whereNull('fin');
         }
 
-        // ----- Búsqueda de texto -----
         if ($request->filled('q')) {
             $term = '%' . str_replace(' ', '%', $request->string('q')) . '%';
             $q->where(function ($w) use ($term) {
@@ -107,7 +105,7 @@ class ReporteController extends Controller
             });
         }
 
-        // ----- Filtro por fecha (ventana 7am–7am) sobre 'inicio' -----
+        // ----- Filtro por fecha 
         $dateField = 'inicio';
         if ($request->filled('day')) {
             $start = Carbon::parse($request->string('day'), $this->tz)->setTime(7, 0, 0);
@@ -123,14 +121,14 @@ class ReporteController extends Controller
             }
         }
 
-        // Rango de horas dentro del día (aplicado sobre 'inicio' en su fecha)
+        // Rango de horas dentro del día 
         if ($request->filled('hour_from') || $request->filled('hour_to')) {
             $hf = max(0, min(23, (int)$request->integer('hour_from', 0)));
             $ht = max(0, min(23, (int)$request->integer('hour_to', 23)));
             $q->whereRaw('HOUR(inicio) BETWEEN ? AND ?', [$hf, $ht]);
         }
 
-        // Bucket de turno por hora (shift)
+        // Bucket de turno por hora
         if ($request->filled('shift')) {
             $shift = strtolower($request->string('shift'));
             if ($shift === '1') {
@@ -142,7 +140,6 @@ class ReporteController extends Controller
             }
         }
 
-        // ----- Ordenamiento -----
         $sortBy = $request->string('sort_by', 'inicio');
         $sortDir = strtolower($request->string('sort_dir', 'desc')) === 'asc' ? 'asc' : 'desc';
         if (!in_array($sortBy, ['inicio', 'aceptado_en', 'fin', 'status', 'maquina_id', 'area_id', 'created_at', 'updated_at'], true)) {
@@ -319,16 +316,17 @@ class ReporteController extends Controller
             return response()->json(['message' => 'Solo los líderes pueden crear reportes.'], 403);
         }
 
-        // Bloqueo: misma máquina en < 15 minutos
+        // Bloqueo: misma máquina en < 15 minutos SOLO si está abierta o en mantenimiento
         $now = now();
-        $duplicado = Reporte::where('maquina_id', $data['maquina_id'])
+        $reporteActivo = Reporte::where('maquina_id', $data['maquina_id'])
             ->where('inicio', '>=', (clone $now)->subMinutes(15))
+            ->whereIn('status', ['abierto', 'en_mantenimiento'])
             ->exists();
-        if ($duplicado) {
-            return response()->json(['message' => 'Ya existe un reporte para esta máquina en los últimos 15 minutos.'], 422);
+        if ($reporteActivo) {
+            return response()->json(['message' => 'Ya existe un reporte activo para esta máquina en los últimos 15 minutos.'], 422);
         }
 
-    $user    = $creator; // ya validado como líder
+    $user    = $creator; 
         $maquina = Maquina::with('linea.area')->findOrFail($data['maquina_id']);
         $areaId  = optional(optional($maquina->linea)->area)->id;
 

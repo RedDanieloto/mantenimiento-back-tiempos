@@ -1,9 +1,5 @@
 # API TiempoMuertoGST
 
-Base URL: http://127.0.0.1:8000/api
-
-Estado de auth: Actualmente no hay autenticación en los endpoints documentados.
-
 Formato: JSON (UTF-8). Enviar siempre los headers:
 - Accept: application/json
 - Content-Type: application/json
