@@ -364,6 +364,7 @@ fetch('/api/reportes', { method: 'POST', headers: { 'Content-Type': 'application
 
 // Listar reportes del día (7am→7am) y paginar
 fetch('/api/reportes?day=2025-09-26&paginate=true&per_page=20')
+
   .then(r => r.json())
   .then(console.log);
 

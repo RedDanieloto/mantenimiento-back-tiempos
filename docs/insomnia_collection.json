@@ -1,0 +1,615 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2025-12-11T00:00:00.000Z",
+  "__export_source": "insomnia.desktop.app:v8.6.0",
+  "resources": [
+    {
+      "_id": "wrk_mantenimiento",
+      "_type": "workspace",
+      "name": "Mantenimiento GST",
+      "description": "Sistema de Gestión de Reportes de Mantenimiento",
+      "scope": "collection"
+    },
+    {
+      "_id": "env_base",
+      "_type": "environment",
+      "parentId": "wrk_mantenimiento",
+      "name": "Base",
+      "data": {
+        "base_url": "http://127.0.0.1:8000/api"
+      },
+      "dataPropertyOrder": {
+        "&": [
+          "base_url"
+        ]
+      },
+      "color": null,
+      "isPrivate": false,
+      "created": 1733900400000,
+      "modified": 1733900400000
+    },
+    {
+      "_id": "fld_usuarios",
+      "_type": "request_group",
+      "parentId": "wrk_mantenimiento",
+      "name": "Usuarios",
+      "description": "Gestión de usuarios (líderes y técnicos)"
+    },
+    {
+      "_id": "req_list_users",
+      "_type": "request",
+      "parentId": "fld_usuarios",
+      "name": "1. Listar todos los usuarios",
+      "method": "GET",
+      "url": "{{ base_url }}/user",
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": 1,
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global"
+    },
+    {
+      "_id": "req_create_user_lider",
+      "_type": "request",
+      "parentId": "fld_usuarios",
+      "name": "2. Crear usuario - Líder (Juan)",
+      "method": "POST",
+      "url": "{{ base_url }}/user",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"employee_number\": 7218,\n  \"name\": \"Juan Líder\",\n  \"role\": \"lider\",\n  \"turno\": \"1\"\n}"
+      },
+      "metaSortKey": 2,
+      "isPrivate": false
+    },
+    {
+      "_id": "req_create_user_tecnico",
+      "_type": "request",
+      "parentId": "fld_usuarios",
+      "name": "3. Crear usuario - Técnico (Carlos)",
+      "method": "POST",
+      "url": "{{ base_url }}/user",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"employee_number\": 4321,\n  \"name\": \"Carlos Técnico\",\n  \"role\": \"tecnico\",\n  \"turno\": \"1\"\n}"
+      },
+      "metaSortKey": 3,
+      "isPrivate": false
+    },
+    {
+      "_id": "req_get_user",
+      "_type": "request",
+      "parentId": "fld_usuarios",
+      "name": "4. Obtener usuario por ID",
+      "method": "GET",
+      "url": "{{ base_url }}/user/7218",
+      "headers": [],
+      "metaSortKey": 4,
+      "isPrivate": false
+    },
+    {
+      "_id": "req_update_user",
+      "_type": "request",
+      "parentId": "fld_usuarios",
+      "name": "5. Actualizar usuario",
+      "method": "PUT",
+      "url": "{{ base_url }}/user/7218",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Juan Líder Actualizado\",\n  \"turno\": \"2\"\n}"
+      },
+      "metaSortKey": 5,
+      "isPrivate": false
+    },
+    {
+      "_id": "req_delete_user",
+      "_type": "request",
+      "parentId": "fld_usuarios",
+      "name": "6. Eliminar usuario",
+      "method": "DELETE",
+      "url": "{{ base_url }}/user/7218",
+      "headers": [],
+      "metaSortKey": 6,
+      "isPrivate": false
+    },
+    {
+      "_id": "fld_areas",
+      "_type": "request_group",
+      "parentId": "wrk_mantenimiento",
+      "name": "Áreas",
+      "description": "Gestión de áreas"
+    },
+    {
+      "_id": "req_list_areas",
+      "_type": "request",
+      "parentId": "fld_areas",
+      "name": "1. Listar áreas",
+      "method": "GET",
+      "url": "{{ base_url }}/areas",
+      "headers": [],
+      "metaSortKey": 10,
+      "isPrivate": false
+    },
+    {
+      "_id": "req_create_area",
+      "_type": "request",
+      "parentId": "fld_areas",
+      "name": "2. Crear área",
+      "method": "POST",
+      "url": "{{ base_url }}/areas",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Costura\"\n}"
+      },
+      "metaSortKey": 11,
+      "isPrivate": false
+    },
+    {
+      "_id": "req_get_area",
+      "_type": "request",
+      "parentId": "fld_areas",
+      "name": "3. Obtener área por ID",
+      "method": "GET",
+      "url": "{{ base_url }}/areas/1",
+      "headers": [],
+      "metaSortKey": 12,
+      "isPrivate": false
+    },
+    {
+      "_id": "req_update_area",
+      "_type": "request",
+      "parentId": "fld_areas",
+      "name": "4. Actualizar área",
+      "method": "PUT",
+      "url": "{{ base_url }}/areas/1",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Costura Actualizado\"\n}"
+      },
+      "metaSortKey": 13,
+      "isPrivate": false
+    },
+    {
+      "_id": "req_delete_area",
+      "_type": "request",
+      "parentId": "fld_areas",
+      "name": "5. Eliminar área",
+      "method": "DELETE",
+      "url": "{{ base_url }}/areas/1",
+      "headers": [],
+      "metaSortKey": 14,
+      "isPrivate": false
+    },
+    {
+      "_id": "fld_lineas",
+      "_type": "request_group",
+      "parentId": "wrk_mantenimiento",
+      "name": "Líneas",
+      "description": "Gestión de líneas de producción"
+    },
+    {
+      "_id": "req_list_lineas",
+      "_type": "request",
+      "parentId": "fld_lineas",
+      "name": "1. Listar líneas",
+      "method": "GET",
+      "url": "{{ base_url }}/lineas",
+      "headers": [],
+      "metaSortKey": 20,
+      "isPrivate": false
+    },
+    {
+      "_id": "req_create_linea",
+      "_type": "request",
+      "parentId": "fld_lineas",
+      "name": "2. Crear línea",
+      "method": "POST",
+      "url": "{{ base_url }}/lineas",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Línea 1\",\n  \"area_id\": 1\n}"
+      },
+      "metaSortKey": 21,
+      "isPrivate": false
+    },
+    {
+      "_id": "req_get_linea",
+      "_type": "request",
+      "parentId": "fld_lineas",
+      "name": "3. Obtener línea por ID",
+      "method": "GET",
+      "url": "{{ base_url }}/lineas/1",
+      "headers": [],
+      "metaSortKey": 22,
+      "isPrivate": false
+    },
+    {
+      "_id": "req_update_linea",
+      "_type": "request",
+      "parentId": "fld_lineas",
+      "name": "4. Actualizar línea",
+      "method": "PUT",
+      "url": "{{ base_url }}/lineas/1",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Línea 1 Actualizada\",\n  \"area_id\": 1\n}"
+      },
+      "metaSortKey": 23,
+      "isPrivate": false
+    },
+    {
+      "_id": "req_delete_linea",
+      "_type": "request",
+      "parentId": "fld_lineas",
+      "name": "5. Eliminar línea",
+      "method": "DELETE",
+      "url": "{{ base_url }}/lineas/1",
+      "headers": [],
+      "metaSortKey": 24,
+      "isPrivate": false
+    },
+    {
+      "_id": "req_lineas_por_area",
+      "_type": "request",
+      "parentId": "fld_lineas",
+      "name": "6. Listar líneas por área",
+      "method": "GET",
+      "url": "{{ base_url }}/areas/1/lineas",
+      "headers": [],
+      "metaSortKey": 25,
+      "isPrivate": false
+    },
+    {
+      "_id": "fld_maquinas",
+      "_type": "request_group",
+      "parentId": "wrk_mantenimiento",
+      "name": "Máquinas",
+      "description": "Gestión de máquinas"
+    },
+    {
+      "_id": "req_list_maquinas",
+      "_type": "request",
+      "parentId": "fld_maquinas",
+      "name": "1. Listar máquinas",
+      "method": "GET",
+      "url": "{{ base_url }}/maquinas",
+      "headers": [],
+      "metaSortKey": 30,
+      "isPrivate": false
+    },
+    {
+      "_id": "req_create_maquina",
+      "_type": "request",
+      "parentId": "fld_maquinas",
+      "name": "2. Crear máquina",
+      "method": "POST",
+      "url": "{{ base_url }}/maquinas",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Máquina Coser A\",\n  \"linea_id\": 1\n}"
+      },
+      "metaSortKey": 31,
+      "isPrivate": false
+    },
+    {
+      "_id": "req_get_maquina",
+      "_type": "request",
+      "parentId": "fld_maquinas",
+      "name": "3. Obtener máquina por ID",
+      "method": "GET",
+      "url": "{{ base_url }}/maquinas/1",
+      "headers": [],
+      "metaSortKey": 32,
+      "isPrivate": false
+    },
+    {
+      "_id": "req_update_maquina",
+      "_type": "request",
+      "parentId": "fld_maquinas",
+      "name": "4. Actualizar máquina",
+      "method": "PUT",
+      "url": "{{ base_url }}/maquinas/1",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Máquina Coser A Actualizada\",\n  \"linea_id\": 1\n}"
+      },
+      "metaSortKey": 33,
+      "isPrivate": false
+    },
+    {
+      "_id": "req_delete_maquina",
+      "_type": "request",
+      "parentId": "fld_maquinas",
+      "name": "5. Eliminar máquina",
+      "method": "DELETE",
+      "url": "{{ base_url }}/maquinas/1",
+      "headers": [],
+      "metaSortKey": 34,
+      "isPrivate": false
+    },
+    {
+      "_id": "req_maquinas_por_linea",
+      "_type": "request",
+      "parentId": "fld_maquinas",
+      "name": "6. Listar máquinas por línea",
+      "method": "GET",
+      "url": "{{ base_url }}/lineas/1/maquinas",
+      "headers": [],
+      "metaSortKey": 35,
+      "isPrivate": false
+    },
+    {
+      "_id": "req_maquinas_por_area",
+      "_type": "request",
+      "parentId": "fld_maquinas",
+      "name": "7. Listar máquinas por área",
+      "method": "GET",
+      "url": "{{ base_url }}/areas/1/maquinas",
+      "headers": [],
+      "metaSortKey": 36,
+      "isPrivate": false
+    },
+    {
+      "_id": "req_search_maquina",
+      "_type": "request",
+      "parentId": "fld_maquinas",
+      "name": "8. Buscar máquina por nombre",
+      "method": "GET",
+      "url": "{{ base_url }}/maquinas/search/Coser",
+      "headers": [],
+      "metaSortKey": 37,
+      "isPrivate": false
+    },
+    {
+      "_id": "req_maquina_with_relations",
+      "_type": "request",
+      "parentId": "fld_maquinas",
+      "name": "9. Obtener máquina con relaciones",
+      "method": "GET",
+      "url": "{{ base_url }}/maquinas/1/relations",
+      "headers": [],
+      "metaSortKey": 38,
+      "isPrivate": false
+    },
+    {
+      "_id": "req_all_maquinas_with_relations",
+      "_type": "request",
+      "parentId": "fld_maquinas",
+      "name": "10. Listar máquinas con relaciones",
+      "method": "GET",
+      "url": "{{ base_url }}/maquinas-with-relations",
+      "headers": [],
+      "metaSortKey": 39,
+      "isPrivate": false
+    },
+    {
+      "_id": "fld_reportes",
+      "_type": "request_group",
+      "parentId": "wrk_mantenimiento",
+      "name": "Reportes",
+      "description": "Gestión de reportes de mantenimiento"
+    },
+    {
+      "_id": "req_list_reportes",
+      "_type": "request",
+      "parentId": "fld_reportes",
+      "name": "1. Listar reportes",
+      "method": "GET",
+      "url": "{{ base_url }}/reportes",
+      "headers": [],
+      "metaSortKey": 40,
+      "isPrivate": false
+    },
+    {
+      "_id": "req_list_reportes_filtros",
+      "_type": "request",
+      "parentId": "fld_reportes",
+      "name": "2. Listar reportes - Con filtros",
+      "method": "GET",
+      "url": "{{ base_url }}/reportes?status=abierto&paginate=true&per_page=10",
+      "headers": [],
+      "metaSortKey": 41,
+      "isPrivate": false
+    },
+    {
+      "_id": "req_list_reportes_dia",
+      "_type": "request",
+      "parentId": "fld_reportes",
+      "name": "3. Listar reportes - Del día",
+      "method": "GET",
+      "url": "{{ base_url }}/reportes?day=2025-12-11",
+      "headers": [],
+      "metaSortKey": 42,
+      "isPrivate": false
+    },
+    {
+      "_id": "req_create_reporte",
+      "_type": "request",
+      "parentId": "fld_reportes",
+      "name": "4. Crear reporte (Líder)",
+      "method": "POST",
+      "url": "{{ base_url }}/reportes",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"employee_number\": 7218,\n  \"maquina_id\": 1,\n  \"turno\": \"1\",\n  \"descripcion_falla\": \"Se detuvo el transportador principal\"\n}"
+      },
+      "metaSortKey": 43,
+      "isPrivate": false
+    },
+    {
+      "_id": "req_accept_reporte",
+      "_type": "request",
+      "parentId": "fld_reportes",
+      "name": "5. Aceptar reporte (Técnico)",
+      "method": "POST",
+      "url": "{{ base_url }}/reportes/1/aceptar",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"tecnico_employee_number\": 4321\n}"
+      },
+      "metaSortKey": 44,
+      "isPrivate": false
+    },
+    {
+      "_id": "req_finish_reporte",
+      "_type": "request",
+      "parentId": "fld_reportes",
+      "name": "6. Finalizar reporte (Técnico)",
+      "method": "POST",
+      "url": "{{ base_url }}/reportes/1/finalizar",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"descripcion_resultado\": \"Se cambió el sensor defectuoso\",\n  \"refaccion_utilizada\": \"Sensor X modelo RS-500\",\n  \"departamento\": \"Mantenimiento\"\n}"
+      },
+      "metaSortKey": 45,
+      "isPrivate": false
+    },
+    {
+      "_id": "req_lookup_reporte",
+      "_type": "request",
+      "parentId": "fld_reportes",
+      "name": "7. Lookup (Autocompletado)",
+      "method": "GET",
+      "url": "{{ base_url }}/reportes/lookup?maquina_id=1",
+      "headers": [],
+      "metaSortKey": 46,
+      "isPrivate": false
+    },
+    {
+      "_id": "req_export_reportes",
+      "_type": "request",
+      "parentId": "fld_reportes",
+      "name": "8. Exportar reportes a Excel",
+      "method": "GET",
+      "url": "{{ base_url }}/reportes/exportarexcel",
+      "headers": [],
+      "metaSortKey": 47,
+      "isPrivate": false
+    },
+    {
+      "_id": "req_reportes_por_area",
+      "_type": "request",
+      "parentId": "fld_reportes",
+      "name": "9. Listar reportes por área",
+      "method": "GET",
+      "url": "{{ base_url }}/areas/1/reportes",
+      "headers": [],
+      "metaSortKey": 48,
+      "isPrivate": false
+    },
+    {
+      "_id": "req_create_reporte_por_area",
+      "_type": "request",
+      "parentId": "fld_reportes",
+      "name": "10. Crear reporte por área",
+      "method": "POST",
+      "url": "{{ base_url }}/areas/1/reportes",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"employee_number\": 7218,\n  \"maquina_id\": 1,\n  \"turno\": \"1\",\n  \"descripcion_falla\": \"Falla detectada en la línea\"\n}"
+      },
+      "metaSortKey": 49,
+      "isPrivate": false
+    },
+    {
+      "_id": "req_export_reportes_por_area",
+      "_type": "request",
+      "parentId": "fld_reportes",
+      "name": "11. Exportar reportes por área a Excel",
+      "method": "GET",
+      "url": "{{ base_url }}/areas/1/reportes/exportarexcel",
+      "headers": [],
+      "metaSortKey": 50,
+      "isPrivate": false
+    }
+  ]
+}
