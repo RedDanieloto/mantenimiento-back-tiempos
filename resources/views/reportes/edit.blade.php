@@ -269,6 +269,34 @@
             color: #1e3c72;
         }
 
+        .time-toggle {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .toggle-btn {
+            padding: 8px 16px;
+            border: 2px solid #2a5298;
+            background: white;
+            color: #2a5298;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-btn.active {
+            background: #2a5298;
+            color: white;
+        }
+
+        .toggle-btn:hover {
+            transform: translateY(-2px);
+        }
+
         @media (max-width: 768px) {
             .header {
                 flex-direction: column;
@@ -345,6 +373,20 @@
                                 <span class="help-text" style="color: #dc3545;">{{ $message }}</span>
                             @enderror
                             <div class="help-text">Cuándo se terminó la reparación</div>
+                        </div>
+                        <div class="form-group">
+                            <label for="minutos_reaccion">Minutos de Reacción</label>
+                            <input type="number" id="minutos_reaccion" name="minutos_reaccion" 
+                                   value="{{ $reporte->aceptado_en ? abs($reporte->aceptado_en->diffInMinutes($reporte->inicio)) : 0 }}" 
+                                   min="0" placeholder="0">
+                            <div class="help-text">Tiempo desde el inicio hasta que llegó el técnico</div>
+                        </div>
+                        <div class="form-group">
+                            <label for="minutos_mantenimiento">Minutos de Mantenimiento</label>
+                            <input type="number" id="minutos_mantenimiento" name="minutos_mantenimiento" 
+                                   value="{{ $reporte->fin && $reporte->aceptado_en ? abs($reporte->fin->diffInMinutes($reporte->aceptado_en)) : 10 }}" 
+                                   min="1" placeholder="10">
+                            <div class="help-text">Tiempo desde que llegó el técnico hasta que terminó la reparación</div>
                         </div>
                     </div>
                 </div>
@@ -424,23 +466,27 @@
                 @if ($reporte->fin)
                     <div class="form-section">
                         <div class="section-title">📈 Resumen de Tiempos</div>
+                        <div class="time-toggle">
+                            <button type="button" class="toggle-btn active" onclick="toggleTimeFormat('horas')">📊 Horas</button>
+                            <button type="button" class="toggle-btn" onclick="toggleTimeFormat('minutos')">⏱️ Minutos</button>
+                        </div>
                         <div class="time-info">
                             <div class="time-item">
                                 <div class="time-label">Tiempo de Reacción</div>
-                                <div class="time-value">
-                                    {{ $reporte->aceptado_en ? $reporte->aceptado_en->diffInHours($reporte->inicio) . 'h ' . $reporte->aceptado_en->diffInMinutes($reporte->inicio) % 60 . 'm' : '-' }}
+                                <div class="time-value time-reaccion" data-minutos="{{ $reporte->aceptado_en ? abs($reporte->aceptado_en->diffInMinutes($reporte->inicio)) : 0 }}">
+                                    {{ $reporte->aceptado_en ? number_format(abs($reporte->aceptado_en->diffInMinutes($reporte->inicio)) / 60, 2) . 'h' : '-' }}
                                 </div>
                             </div>
                             <div class="time-item">
                                 <div class="time-label">Tiempo de Reparación</div>
-                                <div class="time-value">
-                                    {{ $reporte->fin->diffInHours($reporte->aceptado_en ?? $reporte->inicio) }}h {{ $reporte->fin->diffInMinutes($reporte->aceptado_en ?? $reporte->inicio) % 60 }}m
+                                <div class="time-value time-reparacion" data-minutos="{{ abs($reporte->fin->diffInMinutes($reporte->aceptado_en ?? $reporte->inicio)) }}">
+                                    {{ number_format(abs($reporte->fin->diffInMinutes($reporte->aceptado_en ?? $reporte->inicio)) / 60, 2) }}h
                                 </div>
                             </div>
                             <div class="time-item">
                                 <div class="time-label">Tiempo Total</div>
-                                <div class="time-value">
-                                    {{ $reporte->fin->diffInHours($reporte->inicio) }}h {{ $reporte->fin->diffInMinutes($reporte->inicio) % 60 }}m
+                                <div class="time-value time-total" data-minutos="{{ abs($reporte->fin->diffInMinutes($reporte->inicio)) }}">
+                                    {{ number_format(abs($reporte->fin->diffInMinutes($reporte->inicio)) / 60, 2) }}h
                                 </div>
                             </div>
                         </div>
@@ -455,5 +501,29 @@
             </form>
         </div>
     </div>
+
+    <script>
+        function toggleTimeFormat(format) {
+            const buttons = document.querySelectorAll('.toggle-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            const timeElements = {
+                'time-reaccion': document.querySelector('.time-reaccion'),
+                'time-reparacion': document.querySelector('.time-reparacion'),
+                'time-total': document.querySelector('.time-total')
+            };
+
+            Object.values(timeElements).forEach(el => {
+                if (!el) return;
+                const minutos = parseFloat(el.dataset.minutos);
+                if (format === 'minutos') {
+                    el.textContent = Math.round(minutos) + ' min';
+                } else {
+                    el.textContent = (minutos / 60).toFixed(2) + 'h';
+                }
+            });
+        }
+    </script>
 </body>
 </html>

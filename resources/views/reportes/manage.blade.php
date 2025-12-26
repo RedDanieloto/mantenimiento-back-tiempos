@@ -237,6 +237,42 @@
             color: #0f5132;
         }
 
+        .time-format-toggle {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            padding: 0 25px;
+            margin-bottom: 15px;
+        }
+
+        .toggle-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #555;
+            text-transform: uppercase;
+        }
+
+        .toggle-btn {
+            padding: 6px 14px;
+            border: 2px solid #2a5298;
+            background: white;
+            color: #2a5298;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-btn.active {
+            background: #2a5298;
+            color: white;
+        }
+
+        .toggle-btn:hover {
+            transform: translateY(-1px);
+        }
+
         .actions {
             display: flex;
             gap: 8px;
@@ -452,6 +488,19 @@
                         <label for="to_date">Hasta</label>
                         <input type="date" id="to_date" name="to_date" value="{{ request('to_date') }}">
                     </div>
+                    <div class="form-group">
+                        <label for="min_duration">Duración Mínima (minutos)</label>
+                        <input type="number" id="min_duration" name="min_duration" placeholder="Ej: 60" 
+                               value="{{ request('min_duration') }}" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="sort_duration">Ordenar por Duración</label>
+                        <select id="sort_duration" name="sort_duration">
+                            <option value="">No ordenar</option>
+                            <option value="desc" {{ request('sort_duration') == 'desc' ? 'selected' : '' }}>Mayor a Menor ⬇️</option>
+                            <option value="asc" {{ request('sort_duration') == 'asc' ? 'selected' : '' }}>Menor a Mayor ⬆️</option>
+                        </select>
+                    </div>
                     <div class="form-group" style="align-self: flex-end;">
                         <button type="submit" class="btn btn-primary" style="width: 100%;">🔍 Filtrar</button>
                     </div>
@@ -471,6 +520,13 @@
                     </button>
                 </form>
             </div>
+        </div>
+
+        <!-- Time Format Toggle -->
+        <div class="time-format-toggle">
+            <span class="toggle-label">Mostrar Duración:</span>
+            <button type="button" class="toggle-btn active" onclick="toggleTimeFormat('horas')">📊 Horas</button>
+            <button type="button" class="toggle-btn" onclick="toggleTimeFormat('minutos')">⏱️ Minutos</button>
         </div>
 
         <!-- Table -->
@@ -512,8 +568,9 @@
                                     <td>{{ $reporte->inicio->format('d/m/Y H:i') }}</td>
                                     <td>
                                         @if ($reporte->fin)
-                                            {{ $reporte->fin->diffInHours($reporte->inicio) }}h 
-                                            {{ $reporte->fin->diffInMinutes($reporte->inicio) % 60 }}m
+                                            <span class="duration-display" data-minutos="{{ abs($reporte->fin->diffInMinutes($reporte->inicio)) }}">
+                                                {{ number_format(abs($reporte->fin->diffInMinutes($reporte->inicio)) / 60, 2) }}h
+                                            </span>
                                         @else
                                             -
                                         @endif
@@ -598,6 +655,22 @@
                 bulkActions.classList.remove('active');
                 selectAllCheckbox.checked = false;
             }
+        }
+
+        function toggleTimeFormat(format) {
+            const buttons = document.querySelectorAll('.time-format-toggle .toggle-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            const timeElements = document.querySelectorAll('.duration-display');
+            timeElements.forEach(el => {
+                const minutos = parseFloat(el.dataset.minutos);
+                if (format === 'minutos') {
+                    el.textContent = Math.round(minutos) + ' min';
+                } else {
+                    el.textContent = (minutos / 60).toFixed(2) + 'h';
+                }
+            });
         }
     </script>
 </body>

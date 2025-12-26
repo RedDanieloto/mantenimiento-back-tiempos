@@ -47,8 +47,23 @@ class ReporteManagementController extends Controller
             $query->where('inicio', '<=', Carbon::parse($request->string('to_date'))->endOfDay());
         }
 
-        // Ordenar por fecha más reciente
-        $reportes = $query->latest('inicio')->paginate(15);
+        // Filtrar por duración mínima (en minutos)
+        if ($request->filled('min_duration')) {
+            $minMinutos = $request->integer('min_duration');
+            $query->whereRaw('TIMESTAMPDIFF(MINUTE, inicio, fin) >= ?', [$minMinutos])
+                  ->whereNotNull('fin');
+        }
+
+        // Ordenar por duración
+        if ($request->filled('sort_duration')) {
+            $sortDir = $request->string('sort_duration') === 'asc' ? 'asc' : 'desc';
+            $query->orderByRaw("TIMESTAMPDIFF(MINUTE, inicio, fin) $sortDir");
+        } else {
+            // Ordenar por fecha más reciente por defecto
+            $query->latest('inicio');
+        }
+
+        $reportes = $query->paginate(15);
         
         // Para el filtro de áreas
         $areas = Area::all();
@@ -81,6 +96,8 @@ class ReporteManagementController extends Controller
                 'inicio' => 'required|date_format:Y-m-d\TH:i',
                 'aceptado_en' => 'nullable|date_format:Y-m-d\TH:i',
                 'fin' => 'nullable|date_format:Y-m-d\TH:i',
+                'minutos_reaccion' => 'nullable|integer|min:0',
+                'minutos_mantenimiento' => 'nullable|integer|min:1',
                 'status' => 'required|in:abierto,en_mantenimiento,OK',
                 'tecnico_employee_number' => 'nullable|integer|exists:users,employee_number',
                 'descripcion_falla' => 'nullable|string',
@@ -93,8 +110,20 @@ class ReporteManagementController extends Controller
 
             // Convertir a Carbon para validación
             $inicio = Carbon::createFromFormat('Y-m-d\TH:i', $validated['inicio']);
-            $aceptado = $validated['aceptado_en'] ? Carbon::createFromFormat('Y-m-d\TH:i', $validated['aceptado_en']) : null;
-            $fin = $validated['fin'] ? Carbon::createFromFormat('Y-m-d\TH:i', $validated['fin']) : null;
+            
+            // Calcular aceptado_en basado en minutos de reacción
+            if (!empty($validated['minutos_reaccion']) && $validated['minutos_reaccion'] >= 0) {
+                $aceptado = (clone $inicio)->addMinutes((int)$validated['minutos_reaccion']);
+            } else {
+                $aceptado = $validated['aceptado_en'] ? Carbon::createFromFormat('Y-m-d\TH:i', $validated['aceptado_en']) : null;
+            }
+            
+            // Calcular fin basado en minutos de mantenimiento
+            if ($aceptado && !empty($validated['minutos_mantenimiento']) && $validated['minutos_mantenimiento'] > 0) {
+                $fin = (clone $aceptado)->addMinutes((int)$validated['minutos_mantenimiento']);
+            } else {
+                $fin = $validated['fin'] ? Carbon::createFromFormat('Y-m-d\TH:i', $validated['fin']) : null;
+            }
 
             // Validar que los tiempos sean coherentes
             if ($aceptado && $inicio->greaterThanOrEqualTo($aceptado)) {
@@ -164,7 +193,6 @@ class ReporteManagementController extends Controller
                 return back()->with('error', 'Selecciona al menos un reporte');
             }
 
-            // Convertir string de IDs separados por comas a array
             $ids = array_filter(explode(',', $idsString), function($id) {
                 return is_numeric(trim($id));
             });
