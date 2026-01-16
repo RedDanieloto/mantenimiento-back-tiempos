@@ -37,7 +37,32 @@ class ReporteController extends Controller
     // =========================================================
     public function index(Request $request)
     {
-        $q = Reporte::with(['user', 'tecnico', 'maquina.linea.area']);
+        // ✅ OPTIMIZACIÓN: Select limitado + Eager loading
+        $q = Reporte::select([
+            'id',
+            'area_id',
+            'maquina_id',
+            'employee_number',
+            'tecnico_employee_number',
+            'status',
+            'falla',
+            'turno',
+            'descripcion_falla',
+            'descripcion_resultado',
+            'refaccion_utilizada',
+            'departamento',
+            'inicio',
+            'aceptado_en',
+            'fin',
+            'created_at',
+            'updated_at'
+        ])->with([
+            'user:employee_number,name,role,turno',
+            'tecnico:employee_number,name,role,turno',
+            'maquina:id,name,linea_id',
+            'maquina.linea:id,name,area_id',
+            'maquina.linea.area:id,name'
+        ]);
 
         // ----- Filtros básicos -----
         if ($request->filled('id')) {
@@ -353,6 +378,13 @@ class ReporteController extends Controller
         });
 
         $reporte->load(['user','tecnico','maquina.linea.area']);
+        
+        // ✅ OPTIMIZACIÓN: Limpiar caché cuando se crea un reporte
+        $reporteService = new \App\Services\ReporteService();
+        if ($areaId) {
+            $reporteService->clearCacheForArea($areaId);
+        }
+        
         // Broadcasting disabled
         return response()->json($this->presentReporteOut($request, $reporte), 201);
     }
@@ -387,6 +419,11 @@ class ReporteController extends Controller
         ]);
 
         $fresh = $reporte->fresh(['user','tecnico','maquina.linea.area']);
+        
+        // ✅ OPTIMIZACIÓN: Limpiar caché cuando se acepta un reporte
+        $reporteService = new \App\Services\ReporteService();
+        $reporteService->clearCacheForArea($reporte->area_id);
+        
         // Broadcasting disabled
         return response()->json($this->presentReporteOut($request, $fresh));
     }
@@ -415,6 +452,11 @@ class ReporteController extends Controller
         ]);
 
         $fresh = $reporte->fresh(['user','tecnico','maquina.linea.area']);
+        
+        // ✅ OPTIMIZACIÓN: Limpiar caché cuando se finaliza un reporte
+        $reporteService = new \App\Services\ReporteService();
+        $reporteService->clearCacheForArea($reporte->area_id);
+        
         // Broadcasting disabled
         return response()->json($this->presentReporteOut($request, $fresh));
     }
@@ -435,8 +477,48 @@ class ReporteController extends Controller
     // GET /areas/{area}/reportes
     public function indexByArea(Request $request, Area $area)
     {
-        $request->merge(['area_id' => (string) $area->id]);
-        return $this->index($request);
+        // ✅ OPTIMIZACIÓN FASE 1: Filtro por fecha + Eager loading + Caché
+        
+        // Obtener parámetros
+        $day = $request->query('day');  // Formato: "2026-01-16"
+        $page = $request->query('page', 1);
+        $perPage = $request->query('per_page', 50);
+        
+        // Si viene el método legado (merge), usar el index original
+        if (!$day && !$request->query('page')) {
+            $request->merge(['area_id' => (string) $area->id]);
+            return $this->index($request);
+        }
+        
+        // ✅ NUEVO: Usar ReporteService optimizado
+        $reporteService = new \App\Services\ReporteService();
+        
+        // Construir filtros opcionales
+        $filters = [];
+        if ($request->filled('status')) {
+            $filters['status'] = collect(explode(',', $request->string('status')))
+                ->map(fn($s) => $this->normalizeStatus($s))
+                ->filter()->values()->all();
+        }
+        if ($request->filled('turno')) {
+            $filters['turno'] = collect(explode(',', $request->string('turno')))
+                ->map(fn($t) => trim($t))
+                ->filter()->values()->all();
+        }
+        if ($request->filled('tecnico_employee_number')) {
+            $filters['tecnico_employee_number'] = $request->query('tecnico_employee_number');
+        }
+        
+        // Obtener reportes optimizados (con caché)
+        $reportes = $reporteService->getByArea(
+            $area->id,
+            $day,
+            $page,
+            $perPage,
+            $filters
+        );
+        
+        return response()->json($reportes);
     }
 
     // POST /areas/{area}/reportes
