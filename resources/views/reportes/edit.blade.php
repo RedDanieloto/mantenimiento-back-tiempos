@@ -297,6 +297,30 @@
             transform: translateY(-2px);
         }
 
+        .btn-15min {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #FF6B35 0%, #FF8C42 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-15min:hover {
+            background: linear-gradient(135deg, #FF5722 0%, #FF6B35 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+        }
+
+        .btn-15min:active {
+            transform: translateY(0);
+        }
+
         @media (max-width: 768px) {
             .header {
                 flex-direction: column;
@@ -388,6 +412,9 @@
                                    min="1" placeholder="10">
                             <div class="help-text">Tiempo desde que llegó el técnico hasta que terminó la reparación</div>
                         </div>
+                    </div>
+                    <div style="margin-top: 20px; text-align: center;">
+                        <button type="button" class="btn-15min" onclick="set15Minutes()">⚡ 15 Minutos</button>
                     </div>
                 </div>
 
@@ -523,6 +550,11 @@
                     el.textContent = (minutos / 60).toFixed(2) + 'h';
                 }
             });
+        }
+
+        function set15Minutes() {
+            document.getElementById('minutos_reaccion').value = 5;
+            document.getElementById('minutos_mantenimiento').value = 10;
         }
     </script>
 </body>

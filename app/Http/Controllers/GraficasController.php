@@ -22,6 +22,18 @@ class GraficasController extends Controller
             $lineasQuery->where('area_id', (int)$request->input('area_id'));
         }
         $lineas = $lineasQuery->orderBy('name')->get(['id','name','area_id']);
+        
+        // Obtener todos los departamentos únicos
+        try {
+            $departamentos = Reporte::whereNotNull('departamento')
+                ->where('departamento', '!=', '')
+                ->distinct('departamento')
+                ->orderBy('departamento')
+                ->pluck('departamento')
+                ->values();
+        } catch (\Exception $e) {
+            $departamentos = collect([]);
+        }
 
         // 2) Query base con relaciones
         $query = Reporte::with(['maquina.linea.area']);
@@ -42,9 +54,11 @@ class GraficasController extends Controller
                 'area_id'  => $request->input('area_id'),
                 'linea_id' => $request->input('linea_id'),
                 'turno'    => $request->input('turno'),
+                'departamento' => implode(',', $request->input('departamento', [])),
             ],
             'areas'   => $areas,
             'lineas'  => $lineas,
+            'departamentos' => $departamentos,
             'metrics' => $metrics,
         ]);
     }
@@ -75,6 +89,12 @@ class GraficasController extends Controller
         if ($request->filled('linea_id')) {
             $lineas = explode(',', (string)$request->input('linea_id'));
             $q->whereHas('maquina', fn($mq) => $mq->whereIn('linea_id', $lineas));
+        }
+        if ($request->filled('departamento')) {
+            $depts = $request->input('departamento');
+            if (is_array($depts) && !empty($depts)) {
+                $q->whereIn('departamento', $depts);
+            }
         }
         if ($request->filled('maquina_id')) {
             $q->whereIn('maquina_id', explode(',', (string)$request->input('maquina_id')));
@@ -303,6 +323,14 @@ class GraficasController extends Controller
             ->take(10)
             ->values();
 
+        // Top 10 departamentos por número de fallas
+        $topDepartamentos = $reportes->groupBy(fn($r) => $r->departamento)
+            ->map(fn($rows, $dept) => [
+                'name' => $dept ?: 'Sin departamento',
+                'count' => $rows->count(),
+            ])
+            ->sortByDesc('count')->take(10)->values();
+
         return [
             'cards' => [
                 'mttr_avg_hours' => $secToHours($mttrAvg) ?? 0,
@@ -340,6 +368,10 @@ class GraficasController extends Controller
             'mtbf_por_maquina' => [
                 'labels' => $mtbfPorMaquina->pluck('name'),
                 'data'   => $mtbfPorMaquina->pluck('hours'),
+            ],
+            'top_departamentos' => [
+                'labels' => $topDepartamentos->pluck('name'),
+                'data'   => $topDepartamentos->pluck('count'),
             ],
         ];
     }
