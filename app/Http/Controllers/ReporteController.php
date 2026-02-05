@@ -42,8 +42,11 @@ class ReporteController extends Controller
             'id',
             'area_id',
             'maquina_id',
+            'herramental_id',
             'employee_number',
             'tecnico_employee_number',
+            'lider_nombre',
+            'tecnico_nombre',
             'status',
             'falla',
             'turno',
@@ -59,6 +62,7 @@ class ReporteController extends Controller
         ])->with([
             'user:employee_number,name,role,turno',
             'tecnico:employee_number,name,role,turno',
+            'herramental:id,name',
             'maquina:id,name,linea_id',
             'maquina.linea:id,name,area_id',
             'maquina.linea.area:id,name'
@@ -144,6 +148,12 @@ class ReporteController extends Controller
                 $end   = Carbon::parse($toDay, $this->tz)->setTime(7, 0, 0)->addDay();
                 $q->whereBetween($dateField, [$start, $end]);
             }
+        } else {
+            // ✅ OPTIMIZACIÓN: Sin filtro de fecha → default HOY
+            // Evita cargar 7k+ reportes sin restricción de fecha
+            $start = Carbon::now($this->tz)->setTime(7, 0, 0);
+            $end   = (clone $start)->addDay();
+            $q->whereBetween($dateField, [$start, $end]);
         }
 
         // Rango de horas dentro del día 
@@ -172,30 +182,19 @@ class ReporteController extends Controller
         }
         $q->orderBy($sortBy, $sortDir);
 
-        // ----- Paginación opcional -----
-        if ($request->boolean('paginate')) {
-            $perPage = (int) $request->integer('per_page', 15);
-            $p = $q->paginate($perPage);
-            $p->getCollection()->transform(fn(Reporte $r) => $this->presentReporteOut($request, $r));
-            return response()->json($p);
-        }
-
-        // Selección de campos opcional (para payloads ligeros)
-        if ($request->filled('select')) {
-            $columns = collect(explode(',', $request->string('select')))->map(fn($c) => trim($c))->filter()->values()->all();
-            if ($columns) $q->select($columns);
-        }
-
-        $reportes = $q->get();
-        $data = $reportes->map(fn(Reporte $r) => $this->presentReporteOut($request, $r));
-        return response()->json($data);
+        // ----- Paginación (siempre activa) -----
+        // ✅ OPTIMIZACIÓN: Siempre paginar para evitar cargar miles de reportes
+        $perPage = min((int) $request->integer('per_page', 50), 200);
+        $p = $q->paginate($perPage);
+        $p->getCollection()->transform(fn(Reporte $r) => $this->presentReporteOut($request, $r));
+        return response()->json($p);
     }
 
     /** Presenta un reporte con TODO: atributos crudos, relaciones completas y calculados */
     private function presentReporte(Reporte $r): array
     {
-        // Asegura relaciones cargadas
-        $r->loadMissing(['user', 'tecnico', 'maquina.linea.area']);
+        // ✅ OPTIMIZACIÓN: No cargar user/tecnico (nombres vienen de columnas DB)
+        $r->loadMissing(['herramental', 'maquina.linea.area']);
 
         // Conversión base: incluye appends (nombres y tiempos)
         $data = $r->toArray();
@@ -205,11 +204,17 @@ class ReporteController extends Controller
             $data[$f] = $r->$f ? $r->$f->toIso8601String() : null;
         }
 
-        // Relaciones ya vienen en $data: user, tecnico, maquina{ linea{ area } }
+        // IMPORTANTE: herramental_id debe aparecer siempre (aunque sea null)
+        if (!array_key_exists('herramental_id', $data)) {
+            $data['herramental_id'] = $r->herramental_id;
+        }
+
+        // Relaciones ya vienen en $data: user, tecnico, herramental, maquina{ linea{ area } }
         // Añadimos alias planos convenientes
         $data['maquina_nombre'] = optional($r->maquina)->name;
         $data['linea_nombre']   = optional(optional($r->maquina)->linea)->name;
         $data['area_nombre']    = optional(optional(optional($r->maquina)->linea)->area)->name;
+        $data['herramental_nombre'] = optional($r->herramental)->name;
 
         return $data;
     }
@@ -217,10 +222,11 @@ class ReporteController extends Controller
     /** Presentación bonita (agrupada por secciones) */
     private function presentReportePretty(Reporte $r): array
     {
-        $r->loadMissing(['user', 'tecnico', 'maquina.linea.area']);
+        $r->loadMissing(['user', 'tecnico', 'herramental', 'maquina.linea.area']);
         $maquina = $r->maquina;
         $linea   = optional($maquina)->linea;
         $area    = optional($linea)->area;
+        $herramental = $r->herramental;
 
         return [
             'id' => $r->id,
@@ -248,6 +254,7 @@ class ReporteController extends Controller
                 'maquina_id' => $r->maquina_id,
                 'employee_number' => $r->employee_number,
                 'tecnico_employee_number' => $r->tecnico_employee_number,
+                'herramental_id' => $r->herramental_id,
             ],
             'details' => [
                 'turno' => $r->turno,
@@ -256,6 +263,7 @@ class ReporteController extends Controller
                 'descripcion_falla' => $r->descripcion_falla,
                 'descripcion_resultado' => $r->descripcion_resultado,
                 'refaccion_utilizada' => $r->refaccion_utilizada,
+                'herramental' => $herramental ? ['id' => $herramental->id, 'name' => $herramental->name] : null,
             ],
             'timestamps' => [
                 'inicio' => optional($r->inicio)->toIso8601String(),
@@ -275,6 +283,7 @@ class ReporteController extends Controller
                 'area_nombre' => $area?->name,
                 'linea_nombre' => $linea?->name,
                 'maquina_nombre' => $maquina?->name,
+                'herramental_nombre' => $herramental?->name,
             ],
         ];
     }
@@ -377,7 +386,7 @@ class ReporteController extends Controller
             ]);
         });
 
-        $reporte->load(['user','tecnico','maquina.linea.area']);
+        $reporte->load(['user','tecnico','herramental','maquina.linea.area']);
         
         // ✅ OPTIMIZACIÓN: Limpiar caché cuando se crea un reporte
         $reporteService = new \App\Services\ReporteService();
@@ -436,6 +445,7 @@ class ReporteController extends Controller
         $data = Validator::make($request->all(), [
             'descripcion_resultado' => 'required|string',
             'refaccion_utilizada'   => 'nullable|string',
+            'herramental_id'        => 'nullable|integer|exists:herramentals,id',
             'departamento'          => 'required|string',
         ])->validate();
 
@@ -446,12 +456,13 @@ class ReporteController extends Controller
         $reporte->update([
             'descripcion_resultado' => $data['descripcion_resultado'],
             'refaccion_utilizada'   => $data['refaccion_utilizada'] ?? null,
+            'herramental_id'        => $data['herramental_id'] ?? null,
             'departamento'          => $data['departamento'],
             'status'                => 'OK',
             'fin'                   => now(),
         ]);
 
-        $fresh = $reporte->fresh(['user','tecnico','maquina.linea.area']);
+        $fresh = $reporte->fresh(['user','tecnico','herramental','maquina.linea.area']);
         
         // ✅ OPTIMIZACIÓN: Limpiar caché cuando se finaliza un reporte
         $reporteService = new \App\Services\ReporteService();

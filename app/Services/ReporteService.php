@@ -5,7 +5,7 @@ namespace App\Services;
 use App\Models\Reporte;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Pagination\Paginator;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class ReporteService
 {
@@ -28,7 +28,7 @@ class ReporteService
         int $page = 1,
         int $perPage = 50,
         ?array $filters = []
-    ): Paginator {
+    ): LengthAwarePaginator {
         // Validar que per_page no sea muy grande (seguridad)
         $perPage = min($perPage, 100);
         
@@ -87,6 +87,9 @@ class ReporteService
                 'descripcion_resultado',
                 'refaccion_utilizada',
                 'departamento',
+                'lider_nombre',
+                'tecnico_nombre',
+                'herramental_id',
                 'inicio',
                 'aceptado_en',
                 'fin',
@@ -98,7 +101,8 @@ class ReporteService
                 'maquina:id,name,linea_id',
                 'user:employee_number,name,role,turno',
                 'tecnico:employee_number,name,role,turno',
-                'area:id,name'
+                'area:id,name',
+                'herramental:id,name'
             ])
             // ✅ OPTIMIZACIÓN 3: Ordenamiento
             ->orderBy('inicio', 'desc')

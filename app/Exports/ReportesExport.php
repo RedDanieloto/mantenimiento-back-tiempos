@@ -27,7 +27,9 @@ class ReportesExport implements FromQuery, WithHeadings, WithMapping, ShouldAuto
 
     public function query()
     {
-        $q = Reporte::query()->with(['user','tecnico','maquina.linea.area']);
+        $q = Reporte::query()
+            ->select('reportes.*') // Asegurar que se selecciona herramental_id
+            ->with(['user','tecnico','herramental','maquina.linea.area']);
 
         // --- Filtros espejo del controller ---
         if ($this->request->filled('id')) {
@@ -178,6 +180,7 @@ class ReportesExport implements FromQuery, WithHeadings, WithMapping, ShouldAuto
             'Descripción Falla',
             'Descripción Resultado',
             'Refacción Utilizada',
+            'Herramental',
             'Inicio',
             'Aceptado En',
             'Fin',
@@ -223,6 +226,7 @@ class ReportesExport implements FromQuery, WithHeadings, WithMapping, ShouldAuto
             $r->descripcion_falla,
             $r->descripcion_resultado,
             $r->refaccion_utilizada,
+            optional($r->herramental)->name,
             $inicioStr,
             $aceptStr,
             $finStr,

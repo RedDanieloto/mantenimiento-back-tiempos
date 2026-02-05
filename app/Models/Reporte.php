@@ -11,6 +11,7 @@ class Reporte extends Model
         'tecnico_employee_number',
         'area_id',
         'maquina_id',
+        'herramental_id',
         'status',
         'falla',
         'departamento',
@@ -21,6 +22,8 @@ class Reporte extends Model
         'inicio',
         'aceptado_en',
         'fin',
+        'lider_nombre',
+        'tecnico_nombre',
     ];
 
     protected $casts = [
@@ -29,9 +32,9 @@ class Reporte extends Model
         'fin' => 'datetime',
     ];
 
+    // ✅ OPTIMIZACIÓN: Solo campos computados puros (sin queries DB)
+    // lider_nombre y tecnico_nombre son columnas DB denormalizadas
     protected $appends = [
-        'lider_nombre',
-        'tecnico_nombre',
         'tiempo_reaccion_segundos',
         'tiempo_mantenimiento_segundos',
         'tiempo_total_segundos',
@@ -62,36 +65,34 @@ class Reporte extends Model
         return $this->belongsTo(User::class, 'tecnico_employee_number', 'employee_number');
     }
 
-    // Nombres convenientes
-    public function getLiderNombreAttribute(): ?string
+    // Un reporte puede tener un herramental asociado (opcional, solo si falla es de herramental)
+    public function herramental()
     {
-        return $this->user->name ?? null;
+        return $this->belongsTo(herramental::class);
     }
 
-    public function getTecnicoNombreAttribute(): ?string
-    {
-        return $this->tecnico->name ?? null;
-    }
+    // ✅ OPTIMIZACIÓN: lider_nombre y tecnico_nombre son columnas DB
+    // Eliminados accessors N+1 (ahorramos 2 queries × N reportes)
 
-    // Tiempos calculados en segundos
+    // Tiempos calculados en segundos (pure math, sin queries DB)
     public function getTiempoReaccionSegundosAttribute(): ?int
     {
         if (!$this->inicio) return null;
         $to = $this->aceptado_en ?: now();
-        return $this->inicio->diffInSeconds($to);
+        return (int) abs($this->inicio->diffInSeconds($to));
     }
 
     public function getTiempoMantenimientoSegundosAttribute(): ?int
     {
         if (!$this->aceptado_en) return null;
         $to = $this->fin ?: now();
-        return $this->aceptado_en->diffInSeconds($to);
+        return (int) abs($this->aceptado_en->diffInSeconds($to));
     }
 
     public function getTiempoTotalSegundosAttribute(): ?int
     {
         if (!$this->inicio) return null;
         $to = $this->fin ?: now();
-        return $this->inicio->diffInSeconds($to);
+        return (int) abs($this->inicio->diffInSeconds($to));
     }
 }
