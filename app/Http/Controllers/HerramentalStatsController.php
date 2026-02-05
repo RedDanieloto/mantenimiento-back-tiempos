@@ -165,7 +165,7 @@ class HerramentalStatsController extends Controller
 
         $tiemposReparacion = $reportes
             ->filter(fn($r) => $r->inicio && $r->fin)
-            ->map(fn($r) => $r->fin->diffInMinutes($r->inicio))
+            ->map(fn($r) => abs($r->fin->diffInMinutes($r->inicio)))
             ->values();
 
         return $tiemposReparacion->isEmpty() 
@@ -186,7 +186,7 @@ class HerramentalStatsController extends Controller
         $tiemposEntreFallos = [];
 
         for ($i = 1; $i < count($sorted); $i++) {
-            $tiempo = $sorted[$i]->inicio->diffInMinutes($sorted[$i-1]->fin);
+            $tiempo = abs($sorted[$i]->inicio->diffInMinutes($sorted[$i-1]->fin));
             $tiemposEntreFallos[] = $tiempo;
         }
 
@@ -204,7 +204,7 @@ class HerramentalStatsController extends Controller
     {
         return $reportes
             ->filter(fn($r) => $r->inicio && $r->fin)
-            ->sum(fn($r) => $r->fin->diffInMinutes($r->inicio));
+            ->sum(fn($r) => abs($r->fin->diffInMinutes($r->inicio)));
     }
 
     /**
@@ -219,7 +219,7 @@ class HerramentalStatsController extends Controller
                 $maquina = $primeraFila->maquina;
                 $tiempoTotal = $grupo
                     ->filter(fn($r) => $r->inicio && $r->fin)
-                    ->sum(fn($r) => $r->fin->diffInMinutes($r->inicio));
+                    ->sum(fn($r) => abs($r->fin->diffInMinutes($r->inicio)));
 
                 return [
                     'maquina_id' => $maquinaId,
@@ -247,7 +247,7 @@ class HerramentalStatsController extends Controller
                 $herramental = $primeraFila->herramental;
                 $tiempoTotal = $grupo
                     ->filter(fn($r) => $r->inicio && $r->fin)
-                    ->sum(fn($r) => $r->fin->diffInMinutes($r->inicio));
+                    ->sum(fn($r) => abs($r->fin->diffInMinutes($r->inicio)));
 
                 return [
                     'herramental_id' => $herramentalId,
@@ -275,7 +275,7 @@ class HerramentalStatsController extends Controller
 
                 $tiempos = $grupo
                     ->filter(fn($r) => $r->inicio && $r->fin)
-                    ->map(fn($r) => $r->fin->diffInMinutes($r->inicio))
+                    ->map(fn($r) => abs($r->fin->diffInMinutes($r->inicio)))
                     ->values();
 
                 return [

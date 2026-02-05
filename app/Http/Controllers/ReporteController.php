@@ -45,6 +45,8 @@ class ReporteController extends Controller
             'herramental_id',
             'employee_number',
             'tecnico_employee_number',
+            'lider_nombre',
+            'tecnico_nombre',
             'status',
             'falla',
             'turno',
@@ -146,6 +148,12 @@ class ReporteController extends Controller
                 $end   = Carbon::parse($toDay, $this->tz)->setTime(7, 0, 0)->addDay();
                 $q->whereBetween($dateField, [$start, $end]);
             }
+        } else {
+            // ✅ OPTIMIZACIÓN: Sin filtro de fecha → default HOY
+            // Evita cargar 7k+ reportes sin restricción de fecha
+            $start = Carbon::now($this->tz)->setTime(7, 0, 0);
+            $end   = (clone $start)->addDay();
+            $q->whereBetween($dateField, [$start, $end]);
         }
 
         // Rango de horas dentro del día 
@@ -174,30 +182,19 @@ class ReporteController extends Controller
         }
         $q->orderBy($sortBy, $sortDir);
 
-        // ----- Paginación opcional -----
-        if ($request->boolean('paginate')) {
-            $perPage = (int) $request->integer('per_page', 15);
-            $p = $q->paginate($perPage);
-            $p->getCollection()->transform(fn(Reporte $r) => $this->presentReporteOut($request, $r));
-            return response()->json($p);
-        }
-
-        // Selección de campos opcional (para payloads ligeros)
-        if ($request->filled('select')) {
-            $columns = collect(explode(',', $request->string('select')))->map(fn($c) => trim($c))->filter()->values()->all();
-            if ($columns) $q->select($columns);
-        }
-
-        $reportes = $q->get();
-        $data = $reportes->map(fn(Reporte $r) => $this->presentReporteOut($request, $r));
-        return response()->json($data);
+        // ----- Paginación (siempre activa) -----
+        // ✅ OPTIMIZACIÓN: Siempre paginar para evitar cargar miles de reportes
+        $perPage = min((int) $request->integer('per_page', 50), 200);
+        $p = $q->paginate($perPage);
+        $p->getCollection()->transform(fn(Reporte $r) => $this->presentReporteOut($request, $r));
+        return response()->json($p);
     }
 
     /** Presenta un reporte con TODO: atributos crudos, relaciones completas y calculados */
     private function presentReporte(Reporte $r): array
     {
-        // Asegura relaciones cargadas
-        $r->loadMissing(['user', 'tecnico', 'herramental', 'maquina.linea.area']);
+        // ✅ OPTIMIZACIÓN: No cargar user/tecnico (nombres vienen de columnas DB)
+        $r->loadMissing(['herramental', 'maquina.linea.area']);
 
         // Conversión base: incluye appends (nombres y tiempos)
         $data = $r->toArray();

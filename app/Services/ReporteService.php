@@ -87,6 +87,9 @@ class ReporteService
                 'descripcion_resultado',
                 'refaccion_utilizada',
                 'departamento',
+                'lider_nombre',
+                'tecnico_nombre',
+                'herramental_id',
                 'inicio',
                 'aceptado_en',
                 'fin',
@@ -98,7 +101,8 @@ class ReporteService
                 'maquina:id,name,linea_id',
                 'user:employee_number,name,role,turno',
                 'tecnico:employee_number,name,role,turno',
-                'area:id,name'
+                'area:id,name',
+                'herramental:id,name'
             ])
             // ✅ OPTIMIZACIÓN 3: Ordenamiento
             ->orderBy('inicio', 'desc')

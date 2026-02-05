@@ -141,15 +141,17 @@ class ReporteHerramentalTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonStructure([
-                '*' => [
-                    'id',
-                    'herramental_id',
-                    'herramental',
-                    'herramental_nombre'
+                'data' => [
+                    '*' => [
+                        'id',
+                        'herramental_id',
+                        'herramental',
+                        'herramental_nombre'
+                    ]
                 ]
             ]);
 
-        $reporteData = collect($response->json())->firstWhere('id', $reporte->id);
+        $reporteData = collect($response->json('data'))->firstWhere('id', $reporte->id);
         
         $this->assertEquals($this->herramental->id, $reporteData['herramental_id']);
         $this->assertEquals('Llave Inglesa Test', $reporteData['herramental_nombre']);
