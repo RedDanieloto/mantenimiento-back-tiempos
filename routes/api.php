@@ -7,6 +7,8 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\AreaController;
 use App\Http\Controllers\MaquinaController;
 use App\Http\Controllers\LineaController;
+use App\Http\Controllers\HerramentalController;
+use App\Http\Controllers\HerramentalStatsController;
 use App\Http\Controllers\AdminController;   
 
 
@@ -61,4 +63,16 @@ Route::post('/areas', [AreaController::class, 'store']);
 Route::get('/areas/{area}', [AreaController::class, 'show']);   
 Route::put('/areas/{area}', [AreaController::class, 'update']);
 Route::delete('/areas/{area}', [AreaController::class, 'destroy']);
+//============================================================
+//=====================[Herramentales]============================
+Route::get('/herramentales', [HerramentalController::class, 'index']);
+Route::post('/herramentales', [HerramentalController::class, 'store']);
+Route::get('/herramentales/{herramental}', [HerramentalController::class, 'show']);
+Route::put('/herramentales/{herramental}', [HerramentalController::class, 'update']);
+Route::delete('/herramentales/{herramental}', [HerramentalController::class, 'destroy']);
+// Helpers
+Route::get('/lineas/{linea}/herramentales', [HerramentalController::class, 'herramentalesPorLinea']);
+
+// Estadísticas de Herramentales
+Route::get('/herramentales-estadisticas', [HerramentalStatsController::class, 'index']);
 //============================================================

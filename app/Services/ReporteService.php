@@ -5,7 +5,7 @@ namespace App\Services;
 use App\Models\Reporte;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Pagination\Paginator;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class ReporteService
 {
@@ -28,7 +28,7 @@ class ReporteService
         int $page = 1,
         int $perPage = 50,
         ?array $filters = []
-    ): Paginator {
+    ): LengthAwarePaginator {
         // Validar que per_page no sea muy grande (seguridad)
         $perPage = min($perPage, 100);
         

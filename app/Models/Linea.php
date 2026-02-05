@@ -19,4 +19,10 @@ class Linea extends Model
     {
         return $this->hasMany(Maquina::class);
     }
+
+    //Una linea tiene muchas herramentals
+    public function herramentals()
+    {
+        return $this->hasMany(herramental::class);
+    }
 }

@@ -11,6 +11,7 @@ class Reporte extends Model
         'tecnico_employee_number',
         'area_id',
         'maquina_id',
+        'herramental_id',
         'status',
         'falla',
         'departamento',
@@ -60,6 +61,12 @@ class Reporte extends Model
     public function tecnico()
     {
         return $this->belongsTo(User::class, 'tecnico_employee_number', 'employee_number');
+    }
+
+    // Un reporte puede tener un herramental asociado (opcional, solo si falla es de herramental)
+    public function herramental()
+    {
+        return $this->belongsTo(herramental::class);
     }
 
     // Nombres convenientes
