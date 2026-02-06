@@ -73,19 +73,26 @@ class ReporteHerramentalTest extends TestCase
     /** @test */
     public function flujo_completo_reporte_con_herramental()
     {
-        // 1. Crear reporte
+        // 1. Crear reporte CON herramental (ahora va en la creación)
         $responseCreate = $this->postJson('/api/reportes', [
             'employee_number' => $this->lider->employee_number,
             'maquina_id' => $this->maquina->id,
             'turno' => 'A',
-            'descripcion_falla' => 'Falla de herramental'
+            'descripcion_falla' => 'Falla de herramental',
+            'herramental_id' => $this->herramental->id,
         ]);
 
-        $responseCreate->assertStatus(201);
+        $responseCreate->assertStatus(201)
+            ->assertJson([
+                'herramental_id' => $this->herramental->id,
+            ]);
         $reporteId = $responseCreate->json('id');
 
-        // Verificar que herramental_id está en la respuesta
-        $this->assertArrayHasKey('herramental_id', $responseCreate->json());
+        // Verificar en BD que herramental_id se guardó al crear
+        $this->assertDatabaseHas('reportes', [
+            'id' => $reporteId,
+            'herramental_id' => $this->herramental->id,
+        ]);
         
         // 2. Aceptar reporte
         $responseAccept = $this->postJson("/api/reportes/{$reporteId}/aceptar", [
@@ -94,19 +101,18 @@ class ReporteHerramentalTest extends TestCase
 
         $responseAccept->assertStatus(200);
 
-        // 3. Finalizar reporte CON herramental
+        // 3. Finalizar reporte (herramental_id ya no va aquí)
         $responseFinish = $this->postJson("/api/reportes/{$reporteId}/finalizar", [
             'descripcion_resultado' => 'Se cambió el herramental defectuoso',
             'refaccion_utilizada' => 'N/A',
-            'herramental_id' => $this->herramental->id,
             'departamento' => 'Mantenimiento'
         ]);
 
         $responseFinish->assertStatus(200)
             ->assertJsonStructure([
                 'herramental_id',
-                'herramental', // Debe incluir el objeto herramental
-                'herramental_nombre' // Debe incluir el nombre
+                'herramental',
+                'herramental_nombre'
             ])
             ->assertJson([
                 'herramental_id' => $this->herramental->id,
@@ -187,27 +193,13 @@ class ReporteHerramentalTest extends TestCase
     /** @test */
     public function no_acepta_herramental_id_invalido()
     {
-        $reporte = Reporte::create([
+        // Intentar crear reporte con herramental_id inválido
+        $response = $this->postJson('/api/reportes', [
             'employee_number' => $this->lider->employee_number,
-            'area_id' => $this->area->id,
             'maquina_id' => $this->maquina->id,
-            'status' => 'abierto',
-            'falla' => 'Herramental',
             'turno' => 'A',
             'descripcion_falla' => 'Falla de herramental',
-            'inicio' => now()
-        ]);
-
-        // Aceptar
-        $this->postJson("/api/reportes/{$reporte->id}/aceptar", [
-            'tecnico_employee_number' => $this->tecnico->employee_number
-        ]);
-
-        // Intentar finalizar con herramental_id inválido
-        $response = $this->postJson("/api/reportes/{$reporte->id}/finalizar", [
-            'descripcion_resultado' => 'Cambio de herramental',
             'herramental_id' => 99999, // ID inexistente
-            'departamento' => 'Mantenimiento'
         ]);
 
         $response->assertStatus(422)
@@ -215,26 +207,31 @@ class ReporteHerramentalTest extends TestCase
     }
 
     /** @test */
-    public function herramental_id_es_opcional_al_finalizar()
+    public function herramental_id_es_opcional_al_crear()
     {
-        $reporte = Reporte::create([
+        // Crear reporte SIN herramental (debe ser válido)
+        $responseCreate = $this->postJson('/api/reportes', [
             'employee_number' => $this->lider->employee_number,
-            'area_id' => $this->area->id,
             'maquina_id' => $this->maquina->id,
-            'status' => 'abierto',
-            'falla' => 'Electrica',
             'turno' => 'A',
             'descripcion_falla' => 'Falla sin herramental',
-            'inicio' => now()
+        ]);
+
+        $responseCreate->assertStatus(201);
+        $reporteId = $responseCreate->json('id');
+
+        $this->assertDatabaseHas('reportes', [
+            'id' => $reporteId,
+            'herramental_id' => null,
         ]);
 
         // Aceptar
-        $this->postJson("/api/reportes/{$reporte->id}/aceptar", [
+        $this->postJson("/api/reportes/{$reporteId}/aceptar", [
             'tecnico_employee_number' => $this->tecnico->employee_number
         ]);
 
-        // Finalizar SIN herramental (debe ser válido)
-        $response = $this->postJson("/api/reportes/{$reporte->id}/finalizar", [
+        // Finalizar SIN herramental
+        $response = $this->postJson("/api/reportes/{$reporteId}/finalizar", [
             'descripcion_resultado' => 'Se reparó',
             'refaccion_utilizada' => 'Cable',
             'departamento' => 'Mantenimiento'
@@ -243,7 +240,7 @@ class ReporteHerramentalTest extends TestCase
         $response->assertStatus(200);
 
         $this->assertDatabaseHas('reportes', [
-            'id' => $reporte->id,
+            'id' => $reporteId,
             'herramental_id' => null,
             'status' => 'OK'
         ]);

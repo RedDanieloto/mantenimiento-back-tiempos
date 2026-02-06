@@ -342,6 +342,7 @@ class ReporteController extends Controller
             'maquina_id'        => 'required|integer|exists:maquinas,id',
             'turno'             => 'required|string|',
             'descripcion_falla' => 'required|string',
+            'herramental_id'    => 'nullable|integer|exists:herramentals,id',
         ])->validate();
 
         // Regla de rol: solo líderes pueden crear
@@ -376,6 +377,7 @@ class ReporteController extends Controller
                 'departamento'            => null,
                 'turno'                   => $data['turno'],
                 'descripcion_falla'       => $data['descripcion_falla'],
+                'herramental_id'          => $data['herramental_id'] ?? null,
                 'descripcion_resultado'   => '',
                 'refaccion_utilizada'     => null,
                 'inicio'                  => now(),
@@ -445,7 +447,6 @@ class ReporteController extends Controller
         $data = Validator::make($request->all(), [
             'descripcion_resultado' => 'required|string',
             'refaccion_utilizada'   => 'nullable|string',
-            'herramental_id'        => 'nullable|integer|exists:herramentals,id',
             'departamento'          => 'required|string',
         ])->validate();
 
@@ -456,7 +457,6 @@ class ReporteController extends Controller
         $reporte->update([
             'descripcion_resultado' => $data['descripcion_resultado'],
             'refaccion_utilizada'   => $data['refaccion_utilizada'] ?? null,
-            'herramental_id'        => $data['herramental_id'] ?? null,
             'departamento'          => $data['departamento'],
             'status'                => 'OK',
             'fin'                   => now(),
