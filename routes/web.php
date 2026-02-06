@@ -13,7 +13,7 @@ Route::get('/graficas', [GraficasController::class, 'index'])->name('graficas.in
 Route::get('/graficas/export', [GraficasController::class, 'export'])->name('graficas.export');
 
 // Dashboard de estadísticas de herramentales
-Route::get('/herramentales-stats', [HerramentalStatsController::class, 'dashboard'])->name('herramentales.stats');
+Route::get('/herramentales', [HerramentalStatsController::class, 'dashboard'])->name('herramentales.stats');
 
 // Gestión de Reportes (editar/eliminar)
 Route::prefix('/reportes')->name('reportes.manage.')->group(function () {
