@@ -71,7 +71,13 @@ class GraficasController extends Controller
             ?: $request->input('month')
             ?: ($request->input('from') && $request->input('to') ? ($request->input('from').'_a_'.$request->input('to')) : 'rango');
         $name = 'kpis_reportes_'.$period.'.xlsx';
-        return (new \App\Exports\ReportesExport($request))->download($name);
+        
+        return (new \App\Exports\ReportesExport($request))->download($name)
+            ->header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            ->header('Content-Disposition', 'attachment; filename="' . basename($name) . '"')
+            ->header('X-Content-Type-Options', 'nosniff')
+            ->header('X-Frame-Options', 'DENY')
+            ->header('X-XSS-Protection', '1; mode=block');
     }
 
     // Aplica los mismos filtros que el API (resumen)
