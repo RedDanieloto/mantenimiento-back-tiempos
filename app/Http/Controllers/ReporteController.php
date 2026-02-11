@@ -478,16 +478,12 @@ class ReporteController extends Controller
     public function exportarexcel(Request $request)
     {
         $filename = 'historial_reportes.xlsx';
-        $path = 'exports/' . uniqid() . '.xlsx';
-        (new \App\Exports\ReportesExport($request))->store($path);
-        $fullPath = storage_path('app/' . $path);
-        
-        return response()->download($fullPath, $filename, [
-            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
-            'X-Content-Type-Options' => 'nosniff',
-            'Cache-Control' => 'public, must-revalidate, max-age=0',
-        ])->deleteFileAfterSend(true);
+
+        return (new \App\Exports\ReportesExport($request))
+            ->download($filename, \Maatwebsite\Excel\Excel::XLSX, [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'X-Content-Type-Options' => 'nosniff',
+            ]);
     }
 
     // =========================================================
@@ -567,15 +563,11 @@ class ReporteController extends Controller
     {
         $request->merge(['area_id' => (string) $area->id]);
         $filename = 'historial_reportes_area_'.$area->id.'.xlsx';
-        $path = 'exports/' . uniqid() . '.xlsx';
-        (new \App\Exports\ReportesExport($request))->store($path);
-        $fullPath = storage_path('app/' . $path);
-        
-        return response()->download($fullPath, $filename, [
-            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
-            'X-Content-Type-Options' => 'nosniff',
-            'Cache-Control' => 'public, must-revalidate, max-age=0',
-        ])->deleteFileAfterSend(true);
+
+        return (new \App\Exports\ReportesExport($request))
+            ->download($filename, \Maatwebsite\Excel\Excel::XLSX, [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'X-Content-Type-Options' => 'nosniff',
+            ]);
     }
 }

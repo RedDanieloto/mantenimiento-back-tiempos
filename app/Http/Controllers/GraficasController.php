@@ -71,18 +71,12 @@ class GraficasController extends Controller
             ?: $request->input('month')
             ?: ($request->input('from') && $request->input('to') ? ($request->input('from').'_a_'.$request->input('to')) : 'rango');
         $filename = 'kpis_reportes_'.$period.'.xlsx';
-        
-        // Generar archivo en storage temporal
-        $path = 'exports/' . uniqid() . '.xlsx';
-        (new \App\Exports\ReportesExport($request))->store($path);
-        $fullPath = storage_path('app/' . $path);
-        
-        return response()->download($fullPath, $filename, [
-            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
-            'X-Content-Type-Options' => 'nosniff',
-            'Cache-Control' => 'public, must-revalidate, max-age=0',
-        ])->deleteFileAfterSend(true);
+
+        return (new \App\Exports\ReportesExport($request))
+            ->download($filename, \Maatwebsite\Excel\Excel::XLSX, [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'X-Content-Type-Options' => 'nosniff',
+            ]);
     }
 
     // Aplica los mismos filtros que el API (resumen)
