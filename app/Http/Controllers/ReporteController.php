@@ -477,7 +477,7 @@ class ReporteController extends Controller
     // =========================================================
     public function exportarexcel(Request $request)
     {
-        $filename = 'historial_reportes.xlsx';
+        $filename = 'historial_reportes_' . now()->format('Ymd_His') . '.xlsx';
 
         return (new \App\Exports\ReportesExport($request))
             ->download($filename, \Maatwebsite\Excel\Excel::XLSX, [
@@ -569,5 +569,12 @@ class ReporteController extends Controller
                 'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                 'X-Content-Type-Options' => 'nosniff',
             ]);
+    }
+
+    // GET /areas/{area}/reportes/descarga-iniciada
+    public function descargaIniciada(Request $request, Area $area)
+    {
+        $downloadUrl = route('reportes.exportByArea', ['area' => $area->id]);
+        return view('descarga_iniciada', compact('downloadUrl'));
     }
 }

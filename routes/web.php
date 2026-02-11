@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\GraficasController;
 use App\Http\Controllers\ReporteManagementController;
 use App\Http\Controllers\HerramentalStatsController;
+use App\Http\Controllers\ReporteController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -24,3 +25,5 @@ Route::prefix('/reportes')->name('reportes.manage.')->group(function () {
     Route::delete('/{reporte}', [ReporteManagementController::class, 'destroy'])->name('destroy');
     Route::post('/eliminar-multiples', [ReporteManagementController::class, 'destroyMultiple'])->name('destroy-multiple');
 });
+
+Route::get('/areas/{area}/reportes/descarga-iniciada', [ReporteController::class, 'descargaIniciada'])->name('reportes.descargaIniciada');
