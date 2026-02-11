@@ -477,8 +477,17 @@ class ReporteController extends Controller
     // =========================================================
     public function exportarexcel(Request $request)
     {
-        return (new \App\Exports\ReportesExport($request))
-            ->download('historial_reportes.xlsx');
+        $filename = 'historial_reportes.xlsx';
+        $path = 'exports/' . uniqid() . '.xlsx';
+        (new \App\Exports\ReportesExport($request))->store($path);
+        $fullPath = storage_path('app/' . $path);
+        
+        return response()->download($fullPath, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+            'X-Content-Type-Options' => 'nosniff',
+            'Cache-Control' => 'public, must-revalidate, max-age=0',
+        ])->deleteFileAfterSend(true);
     }
 
     // =========================================================
@@ -557,7 +566,16 @@ class ReporteController extends Controller
     public function exportByArea(Request $request, Area $area)
     {
         $request->merge(['area_id' => (string) $area->id]);
-        return (new \App\Exports\ReportesExport($request))
-            ->download('historial_reportes_area_'.$area->id.'.xlsx');
+        $filename = 'historial_reportes_area_'.$area->id.'.xlsx';
+        $path = 'exports/' . uniqid() . '.xlsx';
+        (new \App\Exports\ReportesExport($request))->store($path);
+        $fullPath = storage_path('app/' . $path);
+        
+        return response()->download($fullPath, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+            'X-Content-Type-Options' => 'nosniff',
+            'Cache-Control' => 'public, must-revalidate, max-age=0',
+        ])->deleteFileAfterSend(true);
     }
 }
