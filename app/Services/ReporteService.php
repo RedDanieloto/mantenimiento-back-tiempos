@@ -15,12 +15,29 @@ class ReporteService
     private const CACHE_TTL = 120;
     
     /**
+     * Estados que siempre se muestran sin importar la fecha
+     * (reportes pendientes que no deben desaparecer al cambiar de día)
+     */
+    private const ALWAYS_VISIBLE_STATUSES = [
+        'abierto',
+        'en_mantenimiento',
+        'en_proceso',
+        'pendiente',
+        'asignado'
+    ];
+
+    /**
      * Obtener reportes por área con optimizaciones
      * - Filtro por fecha
      * - Eager loading
      * - Select limitado de columnas
      * - Paginación
      * - Caché
+     * 
+     * ⚠️ IMPORTANTE: Los reportes con status "abierto" o "en_mantenimiento"
+     * SIEMPRE se muestran sin importar la fecha, para que los técnicos
+     * puedan ver reportes que quedaron pendientes del día anterior.
+     * (La empresa trabaja 24/5 - 24 horas, 5 días a la semana)
      */
     public function getByArea(
         int $areaId,
@@ -45,11 +62,18 @@ class ReporteService
         // ❌ No está en caché, construir query
         $query = Reporte::where('area_id', $areaId);
         
-        // ✅ FILTRO 1: Por fecha
+        // ✅ FILTRO 1: Por fecha CON excepción para reportes abiertos/en_mantenimiento
+        // Los reportes pendientes SIEMPRE se muestran (sin importar fecha)
         if ($day) {
             $start = Carbon::parse($day, $this->tz)->setTime(7, 0, 0);
             $end   = (clone $start)->addDay();
-            $query->whereBetween('inicio', [$start, $end]);
+            
+            // Query compuesta: 
+            // (reportes del día) OR (reportes abiertos/en_mantenimiento de cualquier fecha)
+            $query->where(function ($q) use ($start, $end) {
+                $q->whereBetween('inicio', [$start, $end])
+                  ->orWhereIn('status', self::ALWAYS_VISIBLE_STATUSES);
+            });
         }
         
         // ✅ FILTRO 2: Por status (si viene en filtros)
