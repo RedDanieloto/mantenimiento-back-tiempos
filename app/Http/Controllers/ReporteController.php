@@ -537,6 +537,57 @@ class ReporteController extends Controller
         return response()->json($reportes);
     }
 
+    // =========================================================
+    // GET /areas/{area}/reportes/pendientes
+    // Muestra TODOS los reportes que NO están en "ok" ni "finalizado"
+    // SIN filtro de fecha - siempre muestra todos los pendientes
+    // =========================================================
+    public function pendientesByArea(Request $request, Area $area)
+    {
+        $page = $request->query('page', 1);
+        $perPage = min((int) $request->query('per_page', 50), 100);
+        
+        // Estados que se consideran "terminados" (no se muestran)
+        $estadosTerminados = ['ok', 'OK', 'finalizado', 'cerrado'];
+        
+        $reportes = Reporte::where('area_id', $area->id)
+            ->whereNotIn('status', $estadosTerminados)
+            ->select([
+                'id',
+                'area_id',
+                'maquina_id',
+                'employee_number',
+                'tecnico_employee_number',
+                'status',
+                'falla',
+                'turno',
+                'descripcion_falla',
+                'descripcion_resultado',
+                'refaccion_utilizada',
+                'departamento',
+                'lider_nombre',
+                'tecnico_nombre',
+                'herramental_id',
+                'inicio',
+                'aceptado_en',
+                'fin',
+                'created_at',
+                'updated_at'
+            ])
+            ->with([
+                'maquina:id,name,linea_id',
+                'maquina.linea:id,name,area_id',
+                'user:employee_number,name,role,turno',
+                'tecnico:employee_number,name,role,turno',
+                'area:id,name',
+                'herramental:id,name'
+            ])
+            ->orderBy('inicio', 'desc')
+            ->paginate($perPage, ['*'], 'page', $page);
+        
+        return response()->json($reportes);
+    }
+
     // POST /areas/{area}/reportes
     public function storeByArea(Request $request, Area $area)
     {
