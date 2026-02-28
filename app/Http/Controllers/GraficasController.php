@@ -164,15 +164,12 @@ class GraficasController extends Controller
         // Total time (downtime)
         $totalSeconds = $reportes->sum(fn($r) => $r->tiempo_total_segundos ?? 0);
 
-        // MTTR promedio (solo con aceptado_en y fin)
-        $mttrValues = $reportes->filter(fn($r) => $r->aceptado_en && $r->fin)
-            ->map(fn($r) => $r->tiempo_mantenimiento_segundos ?? 0)
-            ->filter(fn($s) => $s > 0)
-            ->values();
-        $mttrAvg = $mttrValues->isNotEmpty() ? $mttrValues->avg() : 0;
+        // MTTR promedio = Tiempo Total / Total Fallas (mismo cálculo que el usuario hace a mano)
+        $mttrAvg = $reportes->count() > 0 ? $totalSeconds / $reportes->count() : 0;
 
-        // MTBF promedio 
+        // MTBF promedio (gaps acumulados de todas las máquinas — no promedio de promedios)
         $mtbfPerMachine = [];
+        $allGaps = [];
         $byMachine = $reportes->groupBy(fn($r) => optional($r->maquina)->id);
         foreach ($byMachine as $machineId => $rows) {
             $rows = $rows->sortBy('inicio')->values();
@@ -181,14 +178,18 @@ class GraficasController extends Controller
                 $a = $rows[$i];
                 $b = $rows[$i + 1];
                 if ($a->fin && $b->inicio) {
-                    $gaps[] = $a->fin->diffInSeconds($b->inicio);
+                    $gap = $a->fin->diffInSeconds($b->inicio);
+                    if ($gap > 0) {
+                        $gaps[] = $gap;
+                        $allGaps[] = $gap;
+                    }
                 }
             }
             if (!empty($gaps)) {
                 $mtbfPerMachine[$machineId] = array_sum($gaps) / count($gaps);
             }
         }
-        $mtbfAvg = !empty($mtbfPerMachine) ? array_sum($mtbfPerMachine) / count($mtbfPerMachine) : 0;
+        $mtbfAvg = !empty($allGaps) ? array_sum($allGaps) / count($allGaps) : 0;
 
         // Top 10 líneas por tiempo total
         $topLineas = $reportes->groupBy(fn($r) => optional(optional($r->maquina)->linea)->name)
@@ -214,14 +215,14 @@ class GraficasController extends Controller
             ])
             ->sortBy('turno')->values();
 
-        // MTTR por máquina
-        $mttrPorMaquina = $reportes->filter(fn($r) => $r->aceptado_en && $r->fin)
+        // MTTR por máquina = sum(tiempo_total_segundos) / count fallas
+        $mttrPorMaquina = $reportes
             ->groupBy(fn($r) => optional($r->maquina)->name)
             ->map(function ($rows, $name) {
-                $vals = $rows->map(fn($r) => $r->tiempo_mantenimiento_segundos ?? 0)->filter(fn($s) => $s > 0);
+                $totalDown = $rows->sum(fn($r) => $r->tiempo_total_segundos ?? 0);
                 return [
-                    'name' => $name ?: 'Sin máquina',
-                    'seconds' => $vals->isNotEmpty() ? $vals->avg() : 0,
+                    'name'    => $name ?: 'Sin máquina',
+                    'seconds' => $rows->count() > 0 ? $totalDown / $rows->count() : 0,
                 ];
             })
             ->sortByDesc('seconds')->take(10)->values();
@@ -294,10 +295,8 @@ class GraficasController extends Controller
 
             $dayRows = $reportes->filter(fn($r) => $r->inicio && $r->inicio >= $dayStart && $r->inicio < $dayEnd);
 
-            $valsMttr = $dayRows->filter(fn($r) => $r->aceptado_en && $r->fin)
-                ->map(fn($r) => $r->tiempo_mantenimiento_segundos ?? 0)
-                ->filter(fn($s) => $s > 0);
-            $mttrDay = $valsMttr->isNotEmpty() ? $valsMttr->avg() : 0;
+            $totalDownDay = $dayRows->sum(fn($r) => $r->tiempo_total_segundos ?? 0);
+            $mttrDay = $dayRows->count() > 0 ? $totalDownDay / $dayRows->count() : 0;
 
             // MTBF por día usando los gaps del par cuyo segundo evento cae en este bucket
             $bucketKey = $dayStart->toDateString();
