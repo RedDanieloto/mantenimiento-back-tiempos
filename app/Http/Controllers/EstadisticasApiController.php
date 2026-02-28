@@ -42,11 +42,10 @@ class EstadisticasApiController extends Controller
 
         $secToHours = fn($s) => $s === null ? 0 : round($s / 3600, 2);
 
-        // MTTR
-        $mttrValues = $reportes->filter(fn($r) => $r->aceptado_en && $r->fin)
-            ->map(fn($r) => $r->tiempo_mantenimiento_segundos ?? 0)
-            ->filter(fn($s) => $s > 0);
-        $mttrAvgSec = $mttrValues->isNotEmpty() ? $mttrValues->avg() : 0;
+        // MTTR = suma(fin - inicio) / total fallas
+        $totalRepairSec = $reportes->filter(fn($r) => $r->fin)
+            ->sum(fn($r) => max(0, $r->tiempo_total_segundos ?? 0));
+        $mttrAvgSec = $reportes->count() > 0 ? $totalRepairSec / $reportes->count() : 0;
 
         // MTBF
         $mtbfAvgSec = $this->calcularMTBFGlobal($reportes);
@@ -132,15 +131,15 @@ class EstadisticasApiController extends Controller
 
         $tendencia = $grouped->filter(fn($_, $k) => $k !== 'unknown')
             ->map(function ($rows, $periodo) use ($secToHours) {
-                $mttrVals = $rows->filter(fn($r) => $r->aceptado_en && $r->fin)
-                    ->map(fn($r) => $r->tiempo_mantenimiento_segundos ?? 0)
-                    ->filter(fn($s) => $s > 0);
+                $sumaRepairSec = $rows->filter(fn($r) => $r->fin)
+                    ->sum(fn($r) => max(0, $r->tiempo_total_segundos ?? 0));
+                $mttrSec  = $rows->count() > 0 ? $sumaRepairSec / $rows->count() : 0;
                 $downtime = $rows->sum(fn($r) => $r->tiempo_total_segundos ?? 0);
 
                 return [
                     'periodo'           => $periodo,
                     'total_reportes'    => $rows->count(),
-                    'mttr_horas'        => $secToHours($mttrVals->isNotEmpty() ? $mttrVals->avg() : 0),
+                    'mttr_horas'        => $secToHours($mttrSec),
                     'downtime_horas'    => $secToHours($downtime),
                     'finalizados'       => $rows->where('status', 'OK')->count(),
                     'abiertos'          => $rows->where('status', 'abierto')->count(),
@@ -215,10 +214,10 @@ class EstadisticasApiController extends Controller
 
         $porArea = $reportes->groupBy(fn($r) => optional(optional(optional($r->maquina)->linea)->area)->name ?? 'Sin área')
             ->map(function ($rows, $areaName) use ($secToHours) {
-                $totalDown = $rows->sum(fn($r) => $r->tiempo_total_segundos ?? 0);
-                $mttrVals = $rows->filter(fn($r) => $r->aceptado_en && $r->fin)
-                    ->map(fn($r) => $r->tiempo_mantenimiento_segundos ?? 0)
-                    ->filter(fn($s) => $s > 0);
+                $totalDown    = $rows->sum(fn($r) => $r->tiempo_total_segundos ?? 0);
+                $sumaRepairSec = $rows->filter(fn($r) => $r->fin)
+                    ->sum(fn($r) => max(0, $r->tiempo_total_segundos ?? 0));
+                $mttrSec = $rows->count() > 0 ? $sumaRepairSec / $rows->count() : 0;
 
                 return [
                     'area'              => $areaName,
@@ -227,7 +226,7 @@ class EstadisticasApiController extends Controller
                     'en_mantenimiento'  => $rows->where('status', 'en_mantenimiento')->count(),
                     'finalizados'       => $rows->where('status', 'OK')->count(),
                     'downtime_horas'    => $secToHours($totalDown),
-                    'mttr_horas'        => $secToHours($mttrVals->isNotEmpty() ? $mttrVals->avg() : 0),
+                    'mttr_horas'        => $secToHours($mttrSec),
                 ];
             })
             ->sortByDesc('total_reportes')
@@ -321,18 +320,18 @@ class EstadisticasApiController extends Controller
         $porTecnico = $reportes->filter(fn($r) => $r->tecnico_nombre)
             ->groupBy('tecnico_nombre')
             ->map(function ($rows, $nombre) use ($secToHours) {
-                $finalizados = $rows->where('status', 'OK');
-                $mttrVals = $finalizados->filter(fn($r) => $r->aceptado_en && $r->fin)
-                    ->map(fn($r) => $r->tiempo_mantenimiento_segundos ?? 0)
-                    ->filter(fn($s) => $s > 0);
+                $finalizados   = $rows->where('status', 'OK');
+                $sumaRepairSec = $rows->filter(fn($r) => $r->fin)
+                    ->sum(fn($r) => max(0, $r->tiempo_total_segundos ?? 0));
+                $mttrSec = $rows->count() > 0 ? $sumaRepairSec / $rows->count() : 0;
 
                 return [
                     'tecnico'              => $nombre,
                     'total_asignados'      => $rows->count(),
                     'finalizados'          => $finalizados->count(),
                     'en_proceso'           => $rows->where('status', 'en_mantenimiento')->count(),
-                    'mttr_promedio_horas'   => $secToHours($mttrVals->isNotEmpty() ? $mttrVals->avg() : 0),
-                    'mttr_promedio_minutos' => round(($mttrVals->isNotEmpty() ? $mttrVals->avg() : 0) / 60, 2),
+                    'mttr_promedio_horas'   => $secToHours($mttrSec),
+                    'mttr_promedio_minutos' => round($mttrSec / 60, 2),
                 ];
             })
             ->sortByDesc('total_asignados')
@@ -588,14 +587,16 @@ class EstadisticasApiController extends Controller
      */
     private function mttrPorMaquina($reportes, $secToHours): array
     {
-        return $reportes->filter(fn($r) => $r->aceptado_en && $r->fin)
-            ->groupBy(fn($r) => optional($r->maquina)->name)
+        // Agrupar todas las fallas por máquina (no pre-filtrar por fin)
+        return $reportes->groupBy(fn($r) => optional($r->maquina)->name)
             ->map(function ($rows, $name) use ($secToHours) {
-                $vals = $rows->map(fn($r) => $r->tiempo_mantenimiento_segundos ?? 0)->filter(fn($s) => $s > 0);
+                $sumaRepairSec = $rows->filter(fn($r) => $r->fin)
+                    ->sum(fn($r) => max(0, $r->tiempo_total_segundos ?? 0));
+                $mttrSec = $rows->count() > 0 ? $sumaRepairSec / $rows->count() : 0;
                 return [
                     'nombre'       => $name ?: 'Sin máquina',
-                    'mttr_horas'   => $secToHours($vals->isNotEmpty() ? $vals->avg() : 0),
-                    'mttr_minutos' => round(($vals->isNotEmpty() ? $vals->avg() : 0) / 60, 2),
+                    'mttr_horas'   => $secToHours($mttrSec),
+                    'mttr_minutos' => round($mttrSec / 60, 2),
                     'total'        => $rows->count(),
                 ];
             })
@@ -652,14 +653,14 @@ class EstadisticasApiController extends Controller
             $dayEnd = $cursor->copy()->addDay();
             $dayRows = $reportes->filter(fn($r) => $r->inicio && $r->inicio >= $dayStart && $r->inicio < $dayEnd);
 
-            $mttrVals = $dayRows->filter(fn($r) => $r->aceptado_en && $r->fin)
-                ->map(fn($r) => $r->tiempo_mantenimiento_segundos ?? 0)
-                ->filter(fn($s) => $s > 0);
+            $sumaRepairSec = $dayRows->filter(fn($r) => $r->fin)
+                ->sum(fn($r) => max(0, $r->tiempo_total_segundos ?? 0));
+            $mttrSec = $dayRows->count() > 0 ? $sumaRepairSec / $dayRows->count() : 0;
 
             $series[] = [
                 'fecha'           => $dayStart->format('Y-m-d'),
                 'total_reportes'  => $dayRows->count(),
-                'mttr_horas'      => $secToHours($mttrVals->isNotEmpty() ? $mttrVals->avg() : 0),
+                'mttr_horas'      => $secToHours($mttrSec),
                 'downtime_horas'  => $secToHours($dayRows->sum(fn($r) => $r->tiempo_total_segundos ?? 0)),
             ];
 
