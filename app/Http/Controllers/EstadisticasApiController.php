@@ -473,23 +473,25 @@ class EstadisticasApiController extends Controller
      */
     private function calcularMTBFGlobal($reportes): float
     {
+        // MTBF = suma de todos los gaps entre fallas / número total de gaps
+        // Se agrupan todos los intervalos de todas las máquinas (promedio ponderado real),
+        // evitando el sesgo de "media de medias" que iguala máquinas con 2 fallas a máquinas con 50.
         $byMachine = $reportes->groupBy(fn($r) => optional($r->maquina)->id);
-        $mtbfPerMachine = [];
+        $allGaps = [];
 
         foreach ($byMachine as $rows) {
             $rows = $rows->sortBy('inicio')->values();
-            $gaps = [];
             for ($i = 0; $i < $rows->count() - 1; $i++) {
                 if ($rows[$i]->fin && $rows[$i + 1]->inicio) {
-                    $gaps[] = $rows[$i]->fin->diffInSeconds($rows[$i + 1]->inicio);
+                    $gap = $rows[$i]->fin->diffInSeconds($rows[$i + 1]->inicio);
+                    if ($gap > 0) {
+                        $allGaps[] = $gap;
+                    }
                 }
-            }
-            if (!empty($gaps)) {
-                $mtbfPerMachine[] = array_sum($gaps) / count($gaps);
             }
         }
 
-        return !empty($mtbfPerMachine) ? array_sum($mtbfPerMachine) / count($mtbfPerMachine) : 0;
+        return !empty($allGaps) ? array_sum($allGaps) / count($allGaps) : 0;
     }
 
     /**
@@ -616,7 +618,10 @@ class EstadisticasApiController extends Controller
             $gaps = [];
             for ($i = 0; $i < $rows->count() - 1; $i++) {
                 if ($rows[$i]->fin && $rows[$i + 1]->inicio) {
-                    $gaps[] = $rows[$i]->fin->diffInSeconds($rows[$i + 1]->inicio);
+                    $gap = $rows[$i]->fin->diffInSeconds($rows[$i + 1]->inicio);
+                    if ($gap > 0) {
+                        $gaps[] = $gap;
+                    }
                 }
             }
             if (!empty($gaps)) {
