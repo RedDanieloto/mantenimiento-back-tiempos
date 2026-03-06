@@ -415,6 +415,7 @@
                         </div>
                     </div>
                     <div style="margin-top: 20px; text-align: center;">
+                                            <button type="submit" class="btn-save">💾 Guardar Cambios</button>
                         <button type="button" class="btn-15min" onclick="set15Minutes()">⚡ 15 Minutos</button>
                         <button type="button" class="btn-15min" onclick="set20Minutes()">⚡ 20 Minutos</button>
                         <button type="button" class="btn-15min" onclick="set25Minutes()">⚡ 25 Minutos</button>
