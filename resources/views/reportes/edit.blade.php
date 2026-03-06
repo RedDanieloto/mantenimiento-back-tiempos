@@ -415,6 +415,11 @@
                     </div>
                     <div style="margin-top: 20px; text-align: center;">
                         <button type="button" class="btn-15min" onclick="set15Minutes()">⚡ 15 Minutos</button>
+                        <button type="button" class="btn-15min" onclick="set20Minutes()">⚡ 20 Minutos</button>
+                        <button type="button" class="btn-15min" onclick="set25Minutes()">⚡ 25 Minutos</button>
+                        <button type="button" class="btn-15min" onclick="set30Minutes()">⚡ 30 Minutos</button>
+                        <button type="button" class="btn-15min" onclick="set45Minutes()">⚡ 45 Minutos</button>
+                        <button type="button" class="btn-15min" onclick="set60Minutes()">⚡ 60 Minutos</button>
                     </div>
                 </div>
 
@@ -555,6 +560,26 @@
         function set15Minutes() {
             document.getElementById('minutos_reaccion').value = 5;
             document.getElementById('minutos_mantenimiento').value = 10;
+        }
+        function set20Minutes() {
+            document.getElementById('minutos_reaccion').value = 5;
+            document.getElementById('minutos_mantenimiento').value = 15;
+        }
+        function set25Minutes() {
+            document.getElementById('minutos_reaccion').value = 5;
+            document.getElementById('minutos_mantenimiento').value = 20;
+        }
+        function set30Minutes() {
+            document.getElementById('minutos_reaccion').value = 5;
+            document.getElementById('minutos_mantenimiento').value = 25;
+        }
+        function set45Minutes() {
+            document.getElementById('minutos_reaccion').value = 5;
+            document.getElementById('minutos_mantenimiento').value = 40;
+        }
+        function set60Minutes() {
+            document.getElementById('minutos_reaccion').value = 5;
+            document.getElementById('minutos_mantenimiento').value = 55;
         }
     </script>
 </body>
