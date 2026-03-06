@@ -299,6 +299,7 @@
 
         .btn-15min {
             padding: 12px 24px;
+            padding: 15px 30px 15px 30px !important;
             background: linear-gradient(135deg, #FF6B35 0%, #FF8C42 100%);
             color: white;
             border: none;
