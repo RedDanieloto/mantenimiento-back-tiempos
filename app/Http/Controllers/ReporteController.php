@@ -338,7 +338,7 @@ class ReporteController extends Controller
     public function store(Request $request)
     {
         $data = Validator::make($request->all(), [
-            'employee_number'   => 'required|integer|digits:4|exists:users,employee_number',
+            'employee_number'   => 'required|integer|exists:users,employee_number',
             'maquina_id'        => 'required|integer|exists:maquinas,id',
             'turno'             => 'required|string|',
             'descripcion_falla' => 'required|string',
@@ -592,7 +592,7 @@ class ReporteController extends Controller
     public function storeByArea(Request $request, Area $area)
     {
         $data = Validator::make($request->all(), [
-            'employee_number'   => 'required|integer|digits:4|exists:users,employee_number',
+            'employee_number'   => 'required|integer|exists:users,employee_number',
             'maquina_id'        => 'required|integer|exists:maquinas,id',
             'turno'             => 'required|string',
             'descripcion_falla' => 'required|string',
