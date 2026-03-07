@@ -406,7 +406,7 @@ class ReporteController extends Controller
     public function accept(Request $request, Reporte $reporte)
     {
         $data = Validator::make($request->all(), [
-            'tecnico_employee_number' => 'required|integer|digits:4|exists:users,employee_number',
+            'tecnico_employee_number' => 'required|integer|digits:3|exists:users,employee_number',
         ])->validate();
 
         // Regla de rol: solo técnicos pueden aceptar
