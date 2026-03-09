@@ -154,14 +154,20 @@ class EstadisticasApiController extends Controller
     // 4. GET /api/estadisticas/tiempo-real
     //    Estado actual: reportes abiertos ahora mismo
     // ─────────────────────────────────────────────────────────
-    public function tiempoReal(): JsonResponse
+    public function tiempoReal(Request $request): JsonResponse
     {
         $ahora = Carbon::now($this->tz);
 
-        $abiertos = Reporte::with(['maquina:id,name,linea_id', 'maquina.linea:id,name,area_id', 'maquina.linea.area:id,name'])
+        $q = Reporte::with(['maquina:id,name,linea_id', 'maquina.linea:id,name,area_id', 'maquina.linea.area:id,name'])
             ->whereIn('status', ['abierto', 'en_mantenimiento'])
-            ->orderBy('inicio', 'asc')
-            ->get()
+            ->orderBy('inicio', 'asc');
+
+        // Filtrar por área si viene el parámetro
+        if ($request->filled('area_id')) {
+            $q->whereHas('maquina.linea.area', fn($aq) => $aq->whereIn('id', explode(',', (string) $request->input('area_id'))));
+        }
+
+        $abiertos = $q->get()
             ->map(function ($r) use ($ahora) {
                 $tiempoEsperaSec = $r->inicio ? abs($r->inicio->diffInSeconds($ahora)) : 0;
                 return [
