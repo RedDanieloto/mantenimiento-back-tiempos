@@ -325,6 +325,7 @@ class EstadisticasApiController extends Controller
                     'en_proceso'           => $rows->where('status', 'en_mantenimiento')->count(),
                     'mttr_promedio_horas'   => $secToHours($mttrSec),
                     'mttr_promedio_minutos' => round($mttrSec / 60, 2),
+                    'downtime_total_horas'  => $secToHours($totalDownSec),
                 ];
             })
             ->sortByDesc('total_asignados')
