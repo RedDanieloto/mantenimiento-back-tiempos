@@ -81,14 +81,14 @@ Route::get('/herramentales-estadisticas', [HerramentalStatsController::class, 'i
 
 //====================[Estadísticas API - Dashboard Centralizado]==============================
 Route::prefix('estadisticas')->group(function () {
-    Route::get('/health',        [EstadisticasApiController::class, 'health']);        // Health check
-    Route::get('/resumen',       [EstadisticasApiController::class, 'resumen']);       // KPIs principales
-    Route::get('/graficas',      [EstadisticasApiController::class, 'graficas']);      // Datos para gráficas
-    Route::get('/tendencias',    [EstadisticasApiController::class, 'tendencias']);    // Tendencias semanales/mensuales
-    Route::get('/tiempo-real',   [EstadisticasApiController::class, 'tiempoReal']);    // Estado actual en vivo
-    Route::get('/areas',         [EstadisticasApiController::class, 'porArea']);       // Desglose por área
-    Route::get('/herramentales', [EstadisticasApiController::class, 'herramentales']); // Stats herramentales
-    Route::get('/tecnicos',      [EstadisticasApiController::class, 'tecnicos']);      // Rendimiento técnicos
-    Route::get('/catalogos',     [EstadisticasApiController::class, 'catalogos']);     // Catálogos para filtros
+    Route::get('/health',        [EstadisticasApiController::class, 'health']);       
+    Route::get('/resumen',       [EstadisticasApiController::class, 'resumen']);       
+    Route::get('/graficas',      [EstadisticasApiController::class, 'graficas']);      
+    Route::get('/tendencias',    [EstadisticasApiController::class, 'tendencias']);    
+    Route::get('/tiempo-real',   [EstadisticasApiController::class, 'tiempoReal']);   
+    Route::get('/areas',         [EstadisticasApiController::class, 'porArea']);       
+    Route::get('/herramentales', [EstadisticasApiController::class, 'herramentales']); 
+    Route::get('/tecnicos',      [EstadisticasApiController::class, 'tecnicos']);      
+    Route::get('/catalogos',     [EstadisticasApiController::class, 'catalogos']);    
 });
 //============================================================
