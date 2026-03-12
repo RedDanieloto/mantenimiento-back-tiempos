@@ -10,7 +10,6 @@ use App\Models\Maquina;
 use App\Models\herramental;
 use Carbon\Carbon;
 
-// Obtener datos existentes
 $user = User::where('employee_number', 1111)->first();
 $area = Area::where('name', 'Producción')->first();
 $linea = Linea::where('name', 'Línea A')->first();

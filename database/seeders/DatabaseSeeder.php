@@ -17,14 +17,5 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Usuario admin con número de empleado fijo
-        $admin = User::factory()->create([
-            'employee_number' => 7218,
-            'name' => 'Nestor Cabrera',
-            'role' => 'admin',
-            'turno' => 'A',
-        ]);
-
-
     }
 }
