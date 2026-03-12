@@ -10,14 +10,9 @@ use Carbon\Carbon;
 
 class ReporteManagementController extends Controller
 {
-    /**
-     * Mostrar lista de reportes para gestionar (editar/eliminar)
-     */
-    public function index(Request $request)
+        public function index(Request $request)
     {
         $query = Reporte::with(['user', 'tecnico', 'maquina.linea.area']);
-
-        // Filtros
         if ($request->filled('status')) {
             $query->where('status', $request->string('status'));
         }
@@ -46,48 +41,33 @@ class ReporteManagementController extends Controller
         if ($request->filled('to_date')) {
             $query->where('inicio', '<=', Carbon::parse($request->string('to_date'))->endOfDay());
         }
-
-        // Filtrar por duración mínima (en minutos)
         if ($request->filled('min_duration')) {
             $minMinutos = $request->integer('min_duration');
             $query->whereRaw('TIMESTAMPDIFF(MINUTE, inicio, fin) >= ?', [$minMinutos])
                   ->whereNotNull('fin');
         }
-
-        // Ordenar por duración
         if ($request->filled('sort_duration')) {
             $sortDir = $request->string('sort_duration') === 'asc' ? 'asc' : 'desc';
             $query->orderByRaw("TIMESTAMPDIFF(MINUTE, inicio, fin) $sortDir");
         } else {
-            // Ordenar por fecha más reciente por defecto
             $query->latest('inicio');
         }
 
         $reportes = $query->paginate(15);
-        
-        // Para el filtro de áreas
         $areas = Area::all();
 
         return view('reportes.manage', compact('reportes', 'areas'));
     }
 
-    /**
-     * Mostrar formulario para editar un reporte
-     */
-    public function edit(Reporte $reporte)
+        public function edit(Reporte $reporte)
     {
         $reporte->load(['user', 'tecnico', 'maquina.linea.area']);
-        
-        // Lista de técnicos disponibles
         $tecnicos = User::where('role', 'tecnico')->get();
         
         return view('reportes.edit', compact('reporte', 'tecnicos'));
     }
 
-    /**
-     * Actualizar un reporte
-     */
-    public function update(Request $request, Reporte $reporte)
+        public function update(Request $request, Reporte $reporte)
     {
         try {
             \Log::info('Update request received', ['data' => $request->all()]);
@@ -107,25 +87,17 @@ class ReporteManagementController extends Controller
             ]);
 
             \Log::info('Validated data', ['validated' => $validated]);
-
-            // Convertir a Carbon para validación
             $inicio = Carbon::createFromFormat('Y-m-d\TH:i', $validated['inicio']);
-            
-            // Calcular aceptado_en basado en minutos de reacción
             if (!empty($validated['minutos_reaccion']) && $validated['minutos_reaccion'] >= 0) {
                 $aceptado = (clone $inicio)->addMinutes((int)$validated['minutos_reaccion']);
             } else {
                 $aceptado = $validated['aceptado_en'] ? Carbon::createFromFormat('Y-m-d\TH:i', $validated['aceptado_en']) : null;
             }
-            
-            // Calcular fin basado en minutos de mantenimiento
             if ($aceptado && !empty($validated['minutos_mantenimiento']) && $validated['minutos_mantenimiento'] > 0) {
                 $fin = (clone $aceptado)->addMinutes((int)$validated['minutos_mantenimiento']);
             } else {
                 $fin = $validated['fin'] ? Carbon::createFromFormat('Y-m-d\TH:i', $validated['fin']) : null;
             }
-
-            // Validar que los tiempos sean coherentes
             if ($aceptado && $inicio->greaterThanOrEqualTo($aceptado)) {
                 return back()->withErrors(['aceptado_en' => 'Aceptado debe ser posterior al inicio']);
             }
@@ -135,8 +107,6 @@ class ReporteManagementController extends Controller
             if ($aceptado && $fin && $aceptado->greaterThan($fin)) {
                 return back()->withErrors(['fin' => 'Fin debe ser posterior o igual a aceptado']);
             }
-
-            // Actualizar
             $reporte->update([
                 'inicio' => $inicio,
                 'aceptado_en' => $aceptado,
@@ -159,18 +129,12 @@ class ReporteManagementController extends Controller
         }
     }
 
-    /**
-     * Mostrar página de confirmación de eliminación
-     */
-    public function confirmDelete(Reporte $reporte)
+        public function confirmDelete(Reporte $reporte)
     {
         return view('reportes.confirm-delete', compact('reporte'));
     }
 
-    /**
-     * Eliminar un reporte
-     */
-    public function destroy(Reporte $reporte)
+        public function destroy(Reporte $reporte)
     {
         $reporte->delete();
         
@@ -178,10 +142,7 @@ class ReporteManagementController extends Controller
                        ->with('success', 'Reporte eliminado correctamente');
     }
 
-    /**
-     * Eliminar múltiples reportes
-     */
-    public function destroyMultiple(Request $request)
+        public function destroyMultiple(Request $request)
     {
         try {
             \Log::info('Destroy multiple request received', ['data' => $request->all()]);
@@ -203,8 +164,6 @@ class ReporteManagementController extends Controller
             }
 
             \Log::info('Deleting reportes', ['ids' => $ids]);
-
-            // Eliminar
             $count = Reporte::whereIn('id', $ids)->delete();
 
             \Log::info('Reportes deleted', ['count' => $count]);

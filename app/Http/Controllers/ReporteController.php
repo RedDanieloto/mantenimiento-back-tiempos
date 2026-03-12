@@ -11,15 +11,13 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
-// Websockets fuera
 
 
 class ReporteController extends Controller
 {
     private string $tz = 'America/Mexico_City';
 
-    /** Mapea variantes de texto a los estados internos */
-    private function normalizeStatus(?string $s): ?string
+        private function normalizeStatus(?string $s): ?string
     {
         if ($s === null) return null;
         $s = strtolower(trim($s));
@@ -31,13 +29,8 @@ class ReporteController extends Controller
             default                      => $s,
         };
     }
-
-    // =========================================================
-    // GET /reportes  (lista con filtros)
-    // =========================================================
     public function index(Request $request)
     {
-        // ✅ OPTIMIZACIÓN: Select limitado + Eager loading
         $q = Reporte::select([
             'id',
             'area_id',
@@ -67,8 +60,6 @@ class ReporteController extends Controller
             'maquina.linea:id,name,area_id',
             'maquina.linea.area:id,name'
         ]);
-
-        // ----- Filtros básicos -----
         if ($request->filled('id')) {
             $ids = collect(explode(',', $request->string('id')))->map('intval')->filter()->values()->all();
             if ($ids) $q->whereIn('id', $ids);
@@ -133,8 +124,6 @@ class ReporteController extends Controller
                   ->orWhereHas('maquina.linea.area', fn($aq) => $aq->where('name', 'like', $term));
             });
         }
-
-        // ----- Filtro por fecha 
         $dateField = 'inicio';
         if ($request->filled('day')) {
             $start = Carbon::parse($request->string('day'), $this->tz)->setTime(7, 0, 0);
@@ -149,21 +138,15 @@ class ReporteController extends Controller
                 $q->whereBetween($dateField, [$start, $end]);
             }
         } else {
-            // ✅ OPTIMIZACIÓN: Sin filtro de fecha → default HOY
-            // Evita cargar 7k+ reportes sin restricción de fecha
             $start = Carbon::now($this->tz)->setTime(7, 0, 0);
             $end   = (clone $start)->addDay();
             $q->whereBetween($dateField, [$start, $end]);
         }
-
-        // Rango de horas dentro del día 
         if ($request->filled('hour_from') || $request->filled('hour_to')) {
             $hf = max(0, min(23, (int)$request->integer('hour_from', 0)));
             $ht = max(0, min(23, (int)$request->integer('hour_to', 23)));
             $q->whereRaw('HOUR(inicio) BETWEEN ? AND ?', [$hf, $ht]);
         }
-
-        // Bucket de turno por hora
         if ($request->filled('shift')) {
             $shift = strtolower($request->string('shift'));
             if ($shift === '1') {
@@ -181,36 +164,22 @@ class ReporteController extends Controller
             $sortBy = 'inicio';
         }
         $q->orderBy($sortBy, $sortDir);
-
-        // ----- Paginación (siempre activa) -----
-        // ✅ OPTIMIZACIÓN: Siempre paginar para evitar cargar miles de reportes
         $perPage = min((int) $request->integer('per_page', 50), 200);
         $p = $q->paginate($perPage);
         $p->getCollection()->transform(fn(Reporte $r) => $this->presentReporteOut($request, $r));
         return response()->json($p);
     }
 
-    /** Presenta un reporte con TODO: atributos crudos, relaciones completas y calculados */
-    private function presentReporte(Reporte $r): array
+        private function presentReporte(Reporte $r): array
     {
-        // ✅ OPTIMIZACIÓN: No cargar user/tecnico (nombres vienen de columnas DB)
         $r->loadMissing(['herramental', 'maquina.linea.area']);
-
-        // Conversión base: incluye appends (nombres y tiempos)
         $data = $r->toArray();
-
-        // Normaliza fechas a ISO 8601
         foreach (['inicio','aceptado_en','fin','created_at','updated_at'] as $f) {
             $data[$f] = $r->$f ? $r->$f->toIso8601String() : null;
         }
-
-        // IMPORTANTE: herramental_id debe aparecer siempre (aunque sea null)
         if (!array_key_exists('herramental_id', $data)) {
             $data['herramental_id'] = $r->herramental_id;
         }
-
-        // Relaciones ya vienen en $data: user, tecnico, herramental, maquina{ linea{ area } }
-        // Añadimos alias planos convenientes
         $data['maquina_nombre'] = optional($r->maquina)->name;
         $data['linea_nombre']   = optional(optional($r->maquina)->linea)->name;
         $data['area_nombre']    = optional(optional(optional($r->maquina)->linea)->area)->name;
@@ -219,8 +188,7 @@ class ReporteController extends Controller
         return $data;
     }
 
-    /** Presentación bonita (agrupada por secciones) */
-    private function presentReportePretty(Reporte $r): array
+        private function presentReportePretty(Reporte $r): array
     {
         $r->loadMissing(['user', 'tecnico', 'herramental', 'maquina.linea.area']);
         $maquina = $r->maquina;
@@ -293,10 +261,6 @@ class ReporteController extends Controller
         $pretty = $request->boolean('pretty') || strtolower((string)$request->string('view')) === 'pretty';
         return $pretty ? $this->presentReportePretty($r) : $this->presentReporte($r);
     }
-
-    // =========================================================
-    // GET /reportes/lookup  (autocompletado: maquina/linea/empleados)
-    // =========================================================
     public function lookup(Request $request)
     {
         $out = [];
@@ -331,10 +295,6 @@ class ReporteController extends Controller
 
         return response()->json($out);
     }
-
-    // =========================================================
-    // POST /reportes  (crear por líder, con regla 15 min)
-    // =========================================================
     public function store(Request $request)
     {
         $data = Validator::make($request->all(), [
@@ -344,14 +304,10 @@ class ReporteController extends Controller
             'descripcion_falla' => 'required|string',
             'herramental_id'    => 'nullable|integer|exists:herramentals,id',
         ])->validate();
-
-        // Regla de rol: solo líderes pueden crear
         $creator = User::where('employee_number', $data['employee_number'])->firstOrFail();
         if (strtolower((string)$creator->role) !== 'lider' && strtolower((string)$creator->role) !== 'líder' && strtolower((string)$creator->role) !== 'leader') {
             return response()->json(['message' => 'Solo los líderes pueden crear reportes.'], 403);
         }
-
-        // Bloqueo: misma máquina en < 15 minutos SOLO si está abierta o en mantenimiento
         $now = now();
         $reporteActivo = Reporte::where('maquina_id', $data['maquina_id'])
             ->where('inicio', '>=', (clone $now)->subMinutes(15))
@@ -389,27 +345,17 @@ class ReporteController extends Controller
         });
 
         $reporte->load(['user','tecnico','herramental','maquina.linea.area']);
-        
-        // ✅ OPTIMIZACIÓN: Limpiar caché cuando se crea un reporte
         $reporteService = new \App\Services\ReporteService();
         if ($areaId) {
             $reporteService->clearCacheForArea($areaId);
         }
-        
-        // Broadcasting disabled
         return response()->json($this->presentReporteOut($request, $reporte), 201);
     }
-
-    // =========================================================
-    // POST /reportes/{reporte}/aceptar  (técnico toma la orden)
-    // =========================================================
     public function accept(Request $request, Reporte $reporte)
     {
         $data = Validator::make($request->all(), [
             'tecnico_employee_number' => 'required|integer|exists:users,employee_number',
         ])->validate();
-
-        // Regla de rol: solo técnicos pueden aceptar
         $tec = User::where('employee_number', $data['tecnico_employee_number'])->firstOrFail();
         if (strtolower((string)$tec->role) !== 'tecnico' && strtolower((string)$tec->role) !== 'técnico' && strtolower((string)$tec->role) !== 'technician') {
             return response()->json(['message' => 'Solo los técnicos pueden aceptar reportes.'], 403);
@@ -430,18 +376,10 @@ class ReporteController extends Controller
         ]);
 
         $fresh = $reporte->fresh(['user','tecnico','maquina.linea.area']);
-        
-        // ✅ OPTIMIZACIÓN: Limpiar caché cuando se acepta un reporte
         $reporteService = new \App\Services\ReporteService();
         $reporteService->clearCacheForArea($reporte->area_id);
-        
-        // Broadcasting disabled
         return response()->json($this->presentReporteOut($request, $fresh));
     }
-
-    // =========================================================
-    // POST /reportes/{reporte}/finalizar  (técnico cierra)
-    // =========================================================
     public function finish(Request $request, Reporte $reporte)
     {
         $data = Validator::make($request->all(), [
@@ -463,18 +401,10 @@ class ReporteController extends Controller
         ]);
 
         $fresh = $reporte->fresh(['user','tecnico','herramental','maquina.linea.area']);
-        
-        // ✅ OPTIMIZACIÓN: Limpiar caché cuando se finaliza un reporte
         $reporteService = new \App\Services\ReporteService();
         $reporteService->clearCacheForArea($reporte->area_id);
-        
-        // Broadcasting disabled
         return response()->json($this->presentReporteOut($request, $fresh));
     }
-
-    // =========================================================
-    // GET /reportes/exportarexcel  (global, con mismos filtros)
-    // =========================================================
     public function exportarexcel(Request $request)
     {
         $filename = 'historial_reportes_' . now()->format('Ymd_His') . '.xlsx';
@@ -485,31 +415,16 @@ class ReporteController extends Controller
                 'X-Content-Type-Options' => 'nosniff',
             ]);
     }
-
-    // =========================================================
-    // ========  SCOPES POR ÁREA (opción 1)  ===================
-    // =========================================================
-
-    // GET /areas/{area}/reportes
     public function indexByArea(Request $request, Area $area)
     {
-        // ✅ OPTIMIZACIÓN FASE 1: Filtro por fecha + Eager loading + Caché
-        
-        // Obtener parámetros
-        $day = $request->query('day');  // Formato: "2026-01-16"
+        $day = $request->query('day');
         $page = $request->query('page', 1);
         $perPage = $request->query('per_page', 50);
-        
-        // Si viene el método legado (merge), usar el index original
         if (!$day && !$request->query('page')) {
             $request->merge(['area_id' => (string) $area->id]);
             return $this->index($request);
         }
-        
-        // ✅ NUEVO: Usar ReporteService optimizado
         $reporteService = new \App\Services\ReporteService();
-        
-        // Construir filtros opcionales
         $filters = [];
         if ($request->filled('status')) {
             $filters['status'] = collect(explode(',', $request->string('status')))
@@ -524,8 +439,6 @@ class ReporteController extends Controller
         if ($request->filled('tecnico_employee_number')) {
             $filters['tecnico_employee_number'] = $request->query('tecnico_employee_number');
         }
-        
-        // Obtener reportes optimizados (con caché)
         $reportes = $reporteService->getByArea(
             $area->id,
             $day,
@@ -536,18 +449,10 @@ class ReporteController extends Controller
         
         return response()->json($reportes);
     }
-
-    // =========================================================
-    // GET /areas/{area}/reportes/pendientes
-    // Muestra TODOS los reportes que NO están en "ok" ni "finalizado"
-    // SIN filtro de fecha - siempre muestra todos los pendientes
-    // =========================================================
     public function pendientesByArea(Request $request, Area $area)
     {
         $page = $request->query('page', 1);
         $perPage = min((int) $request->query('per_page', 50), 100);
-        
-        // Estados que se consideran "terminados" (no se muestran)
         $estadosTerminados = ['ok', 'OK', 'finalizado', 'cerrado'];
         
         $reportes = Reporte::where('area_id', $area->id)
@@ -587,8 +492,6 @@ class ReporteController extends Controller
         
         return response()->json($reportes);
     }
-
-    // POST /areas/{area}/reportes
     public function storeByArea(Request $request, Area $area)
     {
         $data = Validator::make($request->all(), [
@@ -597,19 +500,13 @@ class ReporteController extends Controller
             'turno'             => 'required|string',
             'descripcion_falla' => 'required|string',
         ])->validate();
-
-        // La máquina debe pertenecer al área del scope
         $maquina = Maquina::with('linea.area')->findOrFail($data['maquina_id']);
         $areaIdDeMaquina = optional(optional($maquina->linea)->area)->id;
         if ($areaIdDeMaquina !== $area->id) {
             return response()->json(['message' => 'La máquina no pertenece a esta área.'], 422);
         }
-
-        // Reutiliza store() (incluye validación de 15 min y autocompletados)
         return $this->store($request);
     }
-
-    // GET /areas/{area}/reportes/exportarexcel
     public function exportByArea(Request $request, Area $area)
     {
         $request->merge(['area_id' => (string) $area->id]);
@@ -621,8 +518,6 @@ class ReporteController extends Controller
                 'X-Content-Type-Options' => 'nosniff',
             ]);
     }
-
-    // GET /areas/{area}/reportes/descarga-iniciada
     public function descargaIniciada(Request $request, Area $area)
     {
         $downloadUrl = route('reportes.exportByArea', ['area' => $area->id]);

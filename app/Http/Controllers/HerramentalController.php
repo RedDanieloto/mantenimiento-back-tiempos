@@ -85,7 +85,6 @@ class HerramentalController extends Controller
         return response()->json(['message' => 'Herramental eliminado correctamente.'], 200);
     }
 
-    // Helper: obtener herramentales por línea
     public function herramentalesPorLinea($linea_id)
     {
         $herramentales = herramental::where('linea_id', $linea_id)->get();

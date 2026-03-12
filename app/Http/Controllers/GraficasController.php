@@ -11,19 +11,14 @@ use Illuminate\Http\Request;
 class GraficasController extends Controller
 {
     private string $tz = 'America/Mexico_City';
-
-    // GET /graficas
     public function index(Request $request)
     {
-        // 1) Cargar catálogos para selects
         $areas = Area::orderBy('name')->get(['id','name']);
         $lineasQuery = Linea::query();
         if ($request->filled('area_id')) {
             $lineasQuery->where('area_id', (int)$request->input('area_id'));
         }
         $lineas = $lineasQuery->orderBy('name')->get(['id','name','area_id']);
-        
-        // Obtener todos los departamentos únicos
         try {
             $departamentos = Reporte::whereNotNull('departamento')
                 ->where('departamento', '!=', '')
@@ -34,14 +29,10 @@ class GraficasController extends Controller
         } catch (\Exception $e) {
             $departamentos = collect([]);
         }
-
-        // 2) Query base con relaciones
         $query = Reporte::with(['maquina.linea.area']);
         $this->applyFilters($request, $query);
 
         $reportes = $query->get();
-
-        // 3) Métricas y datasets
         $metrics = $this->computeMetrics($request, $reportes);
 
         return view('graficas.index', [
@@ -62,8 +53,6 @@ class GraficasController extends Controller
             'metrics' => $metrics,
         ]);
     }
-
-    // GET /graficas/export  → Excel con los mismos filtros
     public function export(Request $request)
     {
         $period = $request->input('day')
@@ -78,8 +67,6 @@ class GraficasController extends Controller
                 'X-Content-Type-Options' => 'nosniff',
             ]);
     }
-
-    // Aplica los mismos filtros que el API (resumen)
     private function applyFilters(Request $request, $q): void
     {
         if ($request->filled('status')) {
@@ -116,8 +103,6 @@ class GraficasController extends Controller
                   ->orWhereHas('maquina.linea.area', fn($aq) => $aq->where('name', 'like', $term));
             });
         }
-
-        // Ventana 7:00 → 7:00 
         if ($request->filled('day')) {
             $start = Carbon::parse((string)$request->input('day'), $this->tz)->setTime(7, 0, 0);
             $end   = (clone $start)->addDay();
@@ -135,7 +120,7 @@ class GraficasController extends Controller
             if (preg_match('/^(\d{4})-W(\d{2})$/', $weekStr, $m)) {
                 $year = (int)$m[1];
                 $week = (int)$m[2];
-                $start = Carbon::now($this->tz)->setISODate($year, $week, 1)->setTime(7, 0, 0); // Lunes 7:00
+                $start = Carbon::now($this->tz)->setISODate($year, $week, 1)->setTime(7, 0, 0);
                 $end   = (clone $start)->addDays(7); 
                 $q->whereBetween('inicio', [$start, $end]);
             }
@@ -160,14 +145,8 @@ class GraficasController extends Controller
                 '1' => 'A', '2' => 'B', '3' => 'C', default => ($t ?: 'N/A')
             };
         };
-
-        // Total time (downtime)
         $totalSeconds = $reportes->sum(fn($r) => $r->tiempo_total_segundos ?? 0);
-
-        // MTTR promedio = Tiempo Total / Total Fallas (mismo cálculo que el usuario hace a mano)
         $mttrAvg = $reportes->count() > 0 ? $totalSeconds / $reportes->count() : 0;
-
-        // MTBF promedio (gaps acumulados de todas las máquinas — no promedio de promedios)
         $mtbfPerMachine = [];
         $allGaps = [];
         $byMachine = $reportes->groupBy(fn($r) => optional($r->maquina)->id);
@@ -190,32 +169,24 @@ class GraficasController extends Controller
             }
         }
         $mtbfAvg = !empty($allGaps) ? array_sum($allGaps) / count($allGaps) : 0;
-
-        // Top 10 líneas por tiempo total
         $topLineas = $reportes->groupBy(fn($r) => optional(optional($r->maquina)->linea)->name)
             ->map(fn($rows, $name) => [
                 'name' => $name ?: 'Sin línea',
                 'seconds' => $rows->sum(fn($r) => $r->tiempo_total_segundos ?? 0),
             ])
             ->sortByDesc('seconds')->take(10)->values();
-
-        // Top 10 máquinas por tiempo total
         $topMaquinas = $reportes->groupBy(fn($r) => optional($r->maquina)->name)
             ->map(fn($rows, $name) => [
                 'name' => $name ?: 'Sin máquina',
                 'seconds' => $rows->sum(fn($r) => $r->tiempo_total_segundos ?? 0),
             ])
             ->sortByDesc('seconds')->take(10)->values();
-
-        // Tiempo total por turno
         $porTurno = $reportes->groupBy(fn($r) => $turnoLabel($r->turno))
             ->map(fn($rows, $label) => [
                 'turno' => $label,
                 'seconds' => $rows->sum(fn($r) => $r->tiempo_total_segundos ?? 0),
             ])
             ->sortBy('turno')->values();
-
-        // MTTR por máquina = sum(tiempo_total_segundos) / count fallas
         $mttrPorMaquina = $reportes
             ->groupBy(fn($r) => optional($r->maquina)->name)
             ->map(function ($rows, $name) {
@@ -226,9 +197,6 @@ class GraficasController extends Controller
                 ];
             })
             ->sortByDesc('seconds')->take(10)->values();
-
-        // Serie diaria (MTTR y MTBF) en el rango
-        // Determinar rango de días, priorizando filtros explícitos
         if ($request->filled('day')) {
             $minDate = Carbon::parse((string)$request->input('day'), $this->tz)->setTime(7, 0, 0);
             $maxDate = (clone $minDate)->addDay();
@@ -265,8 +233,6 @@ class GraficasController extends Controller
         $labelsDays = [];
         $seriesMttr = [];
         $seriesMtbf = [];
-
-        // Precompute MTBF gaps grouped by bucket day (based on next event's inicio)
         $mtbfDaySum = [];
         $mtbfDayCnt = [];
         foreach ($byMachine as $machineId => $rowsAll) {
@@ -276,7 +242,6 @@ class GraficasController extends Controller
                 $b = $rowsAll[$i + 1];
                 if ($a->fin && $b->inicio) {
                     $gap = $a->fin->diffInSeconds($b->inicio);
-                    // Bucket by the day window of 'b->inicio' (7:00 boundary)
                     $bInicio = $b->inicio->copy()->setTimezone($this->tz);
                     $bucketStart = $bInicio->copy()->hour < 7
                         ? $bInicio->copy()->subDay()->setTime(7,0,0)
@@ -297,8 +262,6 @@ class GraficasController extends Controller
 
             $totalDownDay = $dayRows->sum(fn($r) => $r->tiempo_total_segundos ?? 0);
             $mttrDay = $dayRows->count() > 0 ? $totalDownDay / $dayRows->count() : 0;
-
-            // MTBF por día usando los gaps del par cuyo segundo evento cae en este bucket
             $bucketKey = $dayStart->toDateString();
             $sum = $mtbfDaySum[$bucketKey] ?? 0;
             $cnt = $mtbfDayCnt[$bucketKey] ?? 0;
@@ -310,14 +273,10 @@ class GraficasController extends Controller
 
             $cursor->addDay();
         }
-
-        // Reportes abiertos/en mantenimiento por día
         $abiertosPorDia = $reportes->filter(fn($r) => in_array($r->status, ['abierto','en_mantenimiento']))
             ->groupBy(fn($r) => $r->inicio ? $r->inicio->format('Y-m-d') : 'unknown')
             ->map(fn($rows, $d) => ['day' => $d, 'count' => $rows->count()])
             ->sortBy('day')->values();
-
-        // MTBF por máquina (promedio de gaps por equipo)
         $mtbfPorMaquina = collect($mtbfPerMachine)
             ->map(function ($secs, $machineId) use ($reportes, $secToHours) {
                 $name = optional($reportes->firstWhere('maquina_id', $machineId)?->maquina)->name;
@@ -326,8 +285,6 @@ class GraficasController extends Controller
             ->sortByDesc('hours')
             ->take(10)
             ->values();
-
-        // Top 10 departamentos por número de fallas
         $topDepartamentos = $reportes->groupBy(fn($r) => $r->departamento)
             ->map(fn($rows, $dept) => [
                 'name' => $dept ?: 'Sin departamento',
