@@ -29,7 +29,7 @@ Route::prefix('/areas/{area}')->group(function () {
     Route::get('/reportes/exportarexcel', [ReporteController::class, 'exportByArea']);
 });
 
-// ===== Rutas globales (puedes dejarlas para backoffice) =====
+// ===== Rutas globales =====
 Route::get('/reportes/lookup', [ReporteController::class, 'lookup']);
 Route::get('/reportes/exportarexcel', [ReporteController::class, 'exportarexcel']);
 Route::get('/reportes', [ReporteController::class, 'index']);
@@ -79,7 +79,7 @@ Route::get('/lineas/{linea}/herramentales', [HerramentalController::class, 'herr
 Route::get('/herramentales-estadisticas', [HerramentalStatsController::class, 'index']);
 //============================================================
 
-//====================[Estadísticas API - Dashboard Centralizado]==============================
+//====================[Estadísticas API - Dashboard ]==============================
 Route::prefix('estadisticas')->group(function () {
     Route::get('/health',        [EstadisticasApiController::class, 'health']);       
     Route::get('/resumen',       [EstadisticasApiController::class, 'resumen']);       
