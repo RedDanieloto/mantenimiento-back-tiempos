@@ -42,6 +42,7 @@ class ReporteController extends Controller
             'tecnico_nombre',
             'status',
             'falla',
+            'scrap',
             'turno',
             'descripcion_falla',
             'descripcion_resultado',
@@ -108,6 +109,9 @@ class ReporteController extends Controller
             $flag = filter_var($request->string('has_fin'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
             if ($flag === true) $q->whereNotNull('fin');
             elseif ($flag === false) $q->whereNull('fin');
+        }
+        if ($request->filled('scrap')) {
+            $q->where('scrap', (int) $request->integer('scrap'));
         }
 
         if ($request->filled('q')) {
@@ -227,6 +231,7 @@ class ReporteController extends Controller
             'details' => [
                 'turno' => $r->turno,
                 'falla' => $r->falla,
+                'scrap' => $r->scrap,
                 'departamento' => $r->departamento,
                 'descripcion_falla' => $r->descripcion_falla,
                 'descripcion_resultado' => $r->descripcion_resultado,
@@ -386,6 +391,7 @@ class ReporteController extends Controller
             'descripcion_resultado' => 'required|string',
             'refaccion_utilizada'   => 'nullable|string',
             'departamento'          => 'required|string',
+            'scrap'                 => 'nullable|integer|min:0',
         ])->validate();
 
         if ($reporte->status === 'OK') {
@@ -396,6 +402,7 @@ class ReporteController extends Controller
             'descripcion_resultado' => $data['descripcion_resultado'],
             'refaccion_utilizada'   => $data['refaccion_utilizada'] ?? null,
             'departamento'          => $data['departamento'],
+            'scrap'                 => $data['scrap'] ?? $reporte->scrap,
             'status'                => 'OK',
             'fin'                   => now(),
         ]);
@@ -465,6 +472,7 @@ class ReporteController extends Controller
                 'tecnico_employee_number',
                 'status',
                 'falla',
+                'scrap',
                 'turno',
                 'descripcion_falla',
                 'descripcion_resultado',
@@ -523,4 +531,5 @@ class ReporteController extends Controller
         $downloadUrl = route('reportes.exportByArea', ['area' => $area->id]);
         return view('descarga_iniciada', compact('downloadUrl'));
     }
+    
 }

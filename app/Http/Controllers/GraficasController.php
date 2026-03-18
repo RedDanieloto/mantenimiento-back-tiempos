@@ -34,6 +34,19 @@ class GraficasController extends Controller
 
         $reportes = $query->get();
         $metrics = $this->computeMetrics($request, $reportes);
+        $maquinasTopScrap = $reportes
+            ->groupBy(fn($r) => optional($r->maquina)->id)
+            ->map(function ($rows, $id) {
+                return [
+                    'id' => $id,
+                    'name' => optional($rows->first()->maquina)->name ?: 'Sin máquina',
+                    'scrap_total' => (int) $rows->sum(fn($r) => (int) ($r->scrap ?? 0)),
+                ];
+            })
+            ->filter(fn($m) => !empty($m['id']) && $m['scrap_total'] > 0)
+            ->sortByDesc('scrap_total')
+            ->take(30)
+            ->values();
 
         return view('graficas.index', [
             'filters' => [
@@ -44,11 +57,13 @@ class GraficasController extends Controller
                 'month'    => $request->input('month'),
                 'area_id'  => $request->input('area_id'),
                 'linea_id' => $request->input('linea_id'),
+                'maquina_id' => $request->input('maquina_id'),
                 'turno'    => $request->input('turno'),
                 'departamento' => implode(',', $request->input('departamento', [])),
             ],
             'areas'   => $areas,
             'lineas'  => $lineas,
+            'maquinasTopScrap' => $maquinasTopScrap,
             'departamentos' => $departamentos,
             'metrics' => $metrics,
         ]);
@@ -181,6 +196,15 @@ class GraficasController extends Controller
                 'seconds' => $rows->sum(fn($r) => $r->tiempo_total_segundos ?? 0),
             ])
             ->sortByDesc('seconds')->take(10)->values();
+        $topMaquinasScrap = $reportes->groupBy(fn($r) => optional($r->maquina)->name)
+            ->map(fn($rows, $name) => [
+                'name' => $name ?: 'Sin máquina',
+                'scrap_total' => (int) $rows->sum(fn($r) => (int) ($r->scrap ?? 0)),
+            ])
+            ->filter(fn($row) => $row['scrap_total'] > 0)
+            ->sortByDesc('scrap_total')
+            ->take(10)
+            ->values();
         $porTurno = $reportes->groupBy(fn($r) => $turnoLabel($r->turno))
             ->map(fn($rows, $label) => [
                 'turno' => $label,
@@ -306,6 +330,10 @@ class GraficasController extends Controller
                 'labels' => $topMaquinas->pluck('name'),
                 'data'   => $topMaquinas->pluck('seconds')->map($secToHours),
             ],
+            'top_maquinas_scrap' => [
+                'labels' => $topMaquinasScrap->pluck('name'),
+                'data'   => $topMaquinasScrap->pluck('scrap_total'),
+            ],
             'por_turno' => [
                 'labels' => $porTurno->pluck('turno'),
                 'data'   => $porTurno->pluck('seconds')->map($secToHours),
@@ -334,6 +362,7 @@ class GraficasController extends Controller
                 'labels' => $topDepartamentos->pluck('name'),
                 'data'   => $topDepartamentos->pluck('count'),
             ],
+            
         ];
     }
 }

@@ -27,6 +27,7 @@ class ReportesExport implements FromQuery, WithHeadings, WithMapping, ShouldAuto
 
     public function query()
     {
+        
         $q = Reporte::query()
             ->select('reportes.*') // Asegurar que se selecciona herramental_id
             ->with(['user','tecnico','herramental','maquina.linea.area']);
@@ -87,6 +88,9 @@ class ReportesExport implements FromQuery, WithHeadings, WithMapping, ShouldAuto
             $flag = filter_var($this->request->string('has_fin'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
             if ($flag === true) $q->whereNotNull('fin');
             elseif ($flag === false) $q->whereNull('fin');
+        }
+        if ($this->request->filled('scrap')) {
+            $q->where('scrap', (int) $this->request->integer('scrap'));
         }
 
         if ($this->request->filled('q')) {
@@ -181,6 +185,7 @@ class ReportesExport implements FromQuery, WithHeadings, WithMapping, ShouldAuto
             'Descripción Resultado',
             'Refacción Utilizada',
             'Herramental',
+            'Scrap',
             'Inicio',
             'Aceptado En',
             'Fin',
@@ -199,6 +204,7 @@ class ReportesExport implements FromQuery, WithHeadings, WithMapping, ShouldAuto
         $inicio = $r->inicio ? Carbon::parse($r->inicio) : null;
         $acept  = $r->aceptado_en ? Carbon::parse($r->aceptado_en) : null;
         $fin    = $r->fin ? Carbon::parse($r->fin) : null;
+        $scrap  = $r->scrap;
 
         $mins = fn($secs) => is_null($secs) ? null : floor($secs / 60);
 
@@ -227,6 +233,7 @@ class ReportesExport implements FromQuery, WithHeadings, WithMapping, ShouldAuto
             $r->descripcion_resultado,
             $r->refaccion_utilizada,
             optional($r->herramental)->name,
+            $scrap,
             $inicioStr,
             $aceptStr,
             $finStr,

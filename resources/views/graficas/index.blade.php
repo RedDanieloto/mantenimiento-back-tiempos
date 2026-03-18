@@ -525,13 +525,17 @@
                 $lineaObj = $lineas->firstWhere('id', (int) $filters['linea_id']);
                 $aplicados[] = 'Línea: ' . ($lineaObj->name ?? $filters['linea_id']);
             }
+            if (!empty($filters['maquina_id'])) {
+                $maqObj = collect($maquinasTopScrap ?? [])->firstWhere('id', (int) $filters['maquina_id']);
+                $aplicados[] = 'Máquina: ' . ($maqObj['name'] ?? $filters['maquina_id']);
+            }
             $textoFiltros = count($aplicados) ? implode(' • ', $aplicados) : 'Vista general (sin filtros)';
         @endphp
         <details>
           <summary>
             <div class="summary-row">
                 <h3>Filtros</h3>
-                <small>(clic para {{ request()->hasAny(['day','from','to','week','month','area_id','linea_id','turno']) ? 'ocultar' : 'mostrar' }})</small>
+                <small>(clic para {{ request()->hasAny(['day','from','to','week','month','area_id','linea_id','maquina_id','turno']) ? 'ocultar' : 'mostrar' }})</small>
             </div>
           </summary>
           <form method="GET" action="{{ route('graficas.index') }}" style="margin-top: .75rem;">
@@ -580,6 +584,17 @@
                         <option value="">Todas</option>
                         @foreach($lineas as $l)
                             <option value="{{ $l->id }}" @selected($filters['linea_id']==$l->id)> {{ $l->name }} </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label>Máquina (top scrap)</label>
+                    <select name="maquina_id">
+                        <option value="">Todas</option>
+                        @foreach(($maquinasTopScrap ?? []) as $maq)
+                            <option value="{{ $maq['id'] }}" @selected((string)($filters['maquina_id'] ?? '')===(string)$maq['id'])>
+                                {{ $maq['name'] }} (scrap: {{ $maq['scrap_total'] }})
+                            </option>
                         @endforeach
                     </select>
                 </div>
@@ -660,6 +675,10 @@
             @php $hasAny=true; $lineaObj = $lineas->firstWhere('id', (int) $filters['linea_id']); @endphp
             <span class="chip chip--primary"><b>Línea</b> {{ $lineaObj->name ?? $filters['linea_id'] }}</span>
         @endif
+        @if(!empty($filters['maquina_id']))
+            @php $hasAny=true; $maqObj = collect($maquinasTopScrap ?? [])->firstWhere('id', (int) $filters['maquina_id']); @endphp
+            <span class="chip chip--primary"><b>Máquina</b> {{ $maqObj['name'] ?? $filters['maquina_id'] }}</span>
+        @endif
         @if(!empty($filters['departamento']))
             @php $hasAny=true; $depts = explode(',', $filters['departamento']); @endphp
             @foreach($depts as $dept)
@@ -694,6 +713,10 @@
         <article class="chart-third">
             <div class="chart-header"><h5>Top 10 máquinas por tiempo total (h)</h5><button class="button secondary" onclick="toggleFullscreen('chartTopMaquinas')">Pantalla completa</button></div>
             <canvas id="chartTopMaquinas"></canvas>
+        </article>
+        <article class="chart-third">
+            <div class="chart-header"><h5>Top 10 máquinas con más scrap</h5><button class="button secondary" onclick="toggleFullscreen('chartTopMaquinasScrap')">Pantalla completa</button></div>
+            <canvas id="chartTopMaquinasScrap"></canvas>
         </article>
         <article class="chart-third">
             <div class="chart-header"><h5>Fallas por departamento</h5><button class="button secondary" onclick="toggleFullscreen('chartFallasPorDepartamento')">Pantalla completa</button></div>
@@ -939,6 +962,7 @@ function lineChart(id, labels, series, suggestedMax){
 // Crear gráficas con colores mejorados
 barChart('chartTopLineas', M.top_lineas.labels, M.top_lineas.data, 'Horas', colors.blue);
 barChart('chartTopMaquinas', M.top_maquinas.labels, M.top_maquinas.data, 'Horas', colors.orange);
+barChart('chartTopMaquinasScrap', M.top_maquinas_scrap.labels, M.top_maquinas_scrap.data, 'Scrap', colors.purple);
 pieChart('chartFallasPorDepartamento', M.top_departamentos.labels, M.top_departamentos.data);
 barChart('chartPorTurno', M.por_turno.labels, M.por_turno.data, 'Horas', colors.green);
 barChart('chartMttrMaquina', M.mttr_por_maquina.labels, M.mttr_por_maquina.data, 'MTTR (h)', colors.red);

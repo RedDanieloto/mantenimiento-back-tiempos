@@ -84,6 +84,7 @@ Route::prefix('estadisticas')->group(function () {
     Route::get('/health',        [EstadisticasApiController::class, 'health']);       
     Route::get('/resumen',       [EstadisticasApiController::class, 'resumen']);       
     Route::get('/graficas',      [EstadisticasApiController::class, 'graficas']);      
+    Route::get('/scrap',         [EstadisticasApiController::class, 'scrap']);
     Route::get('/tendencias',    [EstadisticasApiController::class, 'tendencias']);    
     Route::get('/tiempo-real',   [EstadisticasApiController::class, 'tiempoReal']);   
     Route::get('/areas',         [EstadisticasApiController::class, 'porArea']);       

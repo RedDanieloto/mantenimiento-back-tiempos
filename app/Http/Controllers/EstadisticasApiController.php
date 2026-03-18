@@ -73,12 +73,45 @@ class EstadisticasApiController extends Controller
         return $this->apiResponse($desde, $hasta, [
             'top_lineas'         => $this->topLineas($reportes, $secToHours),
             'top_maquinas'       => $this->topMaquinas($reportes, $secToHours),
+            'top_maquinas_scrap' => $this->topMaquinasScrap($reportes),
             'top_departamentos'  => $this->topDepartamentos($reportes),
             'por_turno'          => $this->porTurno($reportes, $secToHours),
             'mttr_por_maquina'   => $this->mttrPorMaquina($reportes, $secToHours),
             'mtbf_por_maquina'   => $this->mtbfPorMaquina($reportes, $secToHours),
             'serie_diaria'       => $this->serieDiaria($reportes, $desde, $hasta, $secToHours),
             'reportes_por_dia'   => $this->reportesPorDia($reportes),
+        ]);
+    }
+
+    public function scrap(Request $request): JsonResponse
+    {
+        [$desde, $hasta] = $this->parsePeriodo($request);
+        $reportes = $this->queryReportes($desde, $hasta, $request);
+
+        $conScrap = $reportes->filter(fn($r) => (int) ($r->scrap ?? 0) > 0);
+        $totalScrap = (int) $conScrap->sum(fn($r) => (int) ($r->scrap ?? 0));
+
+        $top = $conScrap->groupBy(fn($r) => optional($r->maquina)->name)
+            ->map(function ($rows, $name) {
+                $scrapTotal = (int) $rows->sum(fn($r) => (int) ($r->scrap ?? 0));
+                return [
+                    'maquina' => $name ?: 'Sin máquina',
+                    'scrap_total' => $scrapTotal,
+                    'reportes_con_scrap' => $rows->count(),
+                    'scrap_promedio' => round($scrapTotal / max($rows->count(), 1), 2),
+                ];
+            })
+            ->sortByDesc('scrap_total')
+            ->take(10)
+            ->values();
+
+        return $this->apiResponse($desde, $hasta, [
+            'resumen' => [
+                'total_reportes_con_scrap' => $conScrap->count(),
+                'scrap_total' => $totalScrap,
+                'scrap_promedio_por_reporte' => round($totalScrap / max($conScrap->count(), 1), 2),
+            ],
+            'top_maquinas_scrap' => $top,
         ]);
     }
 
@@ -389,6 +422,9 @@ class EstadisticasApiController extends Controller
             if ($request->filled('turno')) {
                 $q->whereIn('turno', explode(',', (string) $request->input('turno')));
             }
+            if ($request->filled('maquina_id')) {
+                $q->whereIn('maquina_id', explode(',', (string) $request->input('maquina_id')));
+            }
             if ($request->filled('departamento')) {
                 $depts = is_array($request->input('departamento'))
                     ? $request->input('departamento')
@@ -462,6 +498,21 @@ class EstadisticasApiController extends Controller
                 'downtime_horas'  => $secToHours($rows->sum(fn($r) => $r->tiempo_total_segundos ?? 0)),
             ])
             ->sortByDesc('downtime_horas')
+            ->take(10)
+            ->values()
+            ->toArray();
+    }
+
+    private function topMaquinasScrap($reportes): array
+    {
+        return $reportes->groupBy(fn($r) => optional($r->maquina)->name)
+            ->map(fn($rows, $name) => [
+                'nombre' => $name ?: 'Sin máquina',
+                'scrap_total' => (int) $rows->sum(fn($r) => (int) ($r->scrap ?? 0)),
+                'reportes_con_scrap' => $rows->filter(fn($r) => (int) ($r->scrap ?? 0) > 0)->count(),
+            ])
+            ->filter(fn($row) => $row['scrap_total'] > 0)
+            ->sortByDesc('scrap_total')
             ->take(10)
             ->values()
             ->toArray();

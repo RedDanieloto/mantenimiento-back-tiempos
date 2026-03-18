@@ -14,6 +14,7 @@ class Reporte extends Model
         'herramental_id',
         'status',
         'falla',
+        'scrap',
         'departamento',
         'turno',
         'descripcion_falla',
@@ -27,6 +28,7 @@ class Reporte extends Model
     ];
 
     protected $casts = [
+        'scrap' => 'integer',
         'inicio' => 'datetime',
         'aceptado_en' => 'datetime',
         'fin' => 'datetime',
