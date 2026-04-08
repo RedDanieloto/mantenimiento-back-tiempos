@@ -378,6 +378,9 @@ class ReporteController extends Controller
             'tecnico_nombre'          => $tec->name,
             'aceptado_en'             => now(),
             'status'                  => 'en_mantenimiento',
+            // Permite alertar también los 20 min de mantenimiento,
+            // incluso si ya se alertó durante los 20 min de reacción.
+            'alerta_1h_enviada'       => false,
         ]);
 
         $fresh = $reporte->fresh(['user','tecnico','maquina.linea.area']);

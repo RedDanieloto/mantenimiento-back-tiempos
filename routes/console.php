@@ -48,7 +48,7 @@ Schedule::call(function () {
         /** @var \App\Models\Reporte $reporte */
         $nombreMaquina = $reporte->maquina ? $reporte->maquina->name : 'N/A';
         $tecnico = $reporte->tecnico_nombre ?: 'Sin asignar';
-        $tiempo = $reporte->aceptado_en ? 'mantenimiento' : 'espera';
+        $tiempo = $reporte->aceptado_en ? 'mantenimiento' : 'reacción';
         
         $mensaje = "⏳ *Alerta de Tiempo*\n"
                  . "El reporte #{$reporte->id} de la máquina *{$nombreMaquina}* lleva más de 20 minutos en {$tiempo}.\n"

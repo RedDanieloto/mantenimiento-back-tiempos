@@ -107,7 +107,9 @@ class ReporteManagementController extends Controller
             if ($aceptado && $fin && $aceptado->greaterThan($fin)) {
                 return back()->withErrors(['fin' => 'Fin debe ser posterior o igual a aceptado']);
             }
-            $reporte->update([
+            $wasAccepted = !is_null($reporte->aceptado_en);
+
+            $updateData = [
                 'inicio' => $inicio,
                 'aceptado_en' => $aceptado,
                 'fin' => $fin,
@@ -117,7 +119,14 @@ class ReporteManagementController extends Controller
                 'descripcion_resultado' => $validated['descripcion_resultado'],
                 'refaccion_utilizada' => $validated['refaccion_utilizada'],
                 'departamento' => $validated['departamento'],
-            ]);
+            ];
+
+            // Si pasa de no aceptado a aceptado, habilita alerta de 20 min en mantenimiento.
+            if (!$wasAccepted && $aceptado) {
+                $updateData['alerta_1h_enviada'] = false;
+            }
+
+            $reporte->update($updateData);
 
             \Log::info('Reporte updated successfully', ['reporte_id' => $reporte->id]);
 
