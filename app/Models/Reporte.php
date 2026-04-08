@@ -25,10 +25,12 @@ class Reporte extends Model
         'fin',
         'lider_nombre',
         'tecnico_nombre',
+        'alerta_1h_enviada',
     ];
 
     protected $casts = [
         'scrap' => 'integer',
+        'alerta_1h_enviada' => 'boolean',
         'inicio' => 'datetime',
         'aceptado_en' => 'datetime',
         'fin' => 'datetime',
