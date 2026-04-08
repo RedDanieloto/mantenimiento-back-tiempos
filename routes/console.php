@@ -36,7 +36,7 @@ Artisan::command('telegram:reenviar-atrasados {--dry-run : Solo lista candidatos
         ? ['abierto']
         : ['en_mantenimiento', 'abierto'];
 
-    $query = Reporte::with('maquina')
+    $query = Reporte::with(['maquina.linea'])
         ->whereIn('status', $statuses)
         ->where(function ($q) use ($threshold) {
             $q->where(function ($sub1) use ($threshold) {
@@ -72,6 +72,7 @@ Artisan::command('telegram:reenviar-atrasados {--dry-run : Solo lista candidatos
     foreach ($reportes as $reporte) {
         /** @var \App\Models\Reporte $reporte */
         $nombreMaquina = $reporte->maquina ? $reporte->maquina->name : 'N/A';
+        $linea = $reporte->maquina?->linea?->name ?? 'N/A';
         $tecnico = $reporte->tecnico_nombre ?: 'Sin asignar';
         $tiempo = $reporte->aceptado_en ? 'mantenimiento' : 'reaccion';
         $minutos = (int) ($reporte->aceptado_en
@@ -84,7 +85,7 @@ Artisan::command('telegram:reenviar-atrasados {--dry-run : Solo lista candidatos
         }
 
         $mensaje = "⏳ *Alerta de Tiempo (Atrasada)*\n"
-            . "El reporte #{$reporte->id} de la máquina *{$nombreMaquina}* en la linea *{$reporte->linea}* lleva {$minutos} minutos en {$tiempo}.\n"
+            . "El reporte #{$reporte->id} de la máquina *{$nombreMaquina}* en la linea *{$linea}* lleva {$minutos} minutos en {$tiempo}.\n"
             . "👨‍🔧 Técnico: {$tecnico}\n"
             . "📝 Falla: {$reporte->descripcion_falla}";
 
@@ -119,7 +120,7 @@ Schedule::call(function () {
         return;
     }
 
-    $reportes = Reporte::with('maquina')
+    $reportes = Reporte::with(['maquina.linea'])
         ->whereIn('status', ['en_mantenimiento', 'abierto'])
         ->where(function($q) {
             $q->where(function($sub1) {
@@ -140,11 +141,12 @@ Schedule::call(function () {
     foreach ($reportes as $reporte) {
         /** @var \App\Models\Reporte $reporte */
         $nombreMaquina = $reporte->maquina ? $reporte->maquina->name : 'N/A';
+        $linea = $reporte->maquina?->linea?->name ?? 'N/A';
         $tecnico = $reporte->tecnico_nombre ?: 'Sin asignar';
         $tiempo = $reporte->aceptado_en ? 'mantenimiento' : 'reacción';
         
         $mensaje = "⏳ *Alerta de Tiempo*\n"
-                 . "El reporte #{$reporte->id} de la máquina *{$nombreMaquina}* en la linea *{$reporte->linea}* lleva más de 20 minutos en {$tiempo}.\n"
+                 . "El reporte #{$reporte->id} de la máquina *{$nombreMaquina}* en la linea *{$linea}* lleva más de 20 minutos en {$tiempo}.\n"
                  . "👨‍🔧 Técnico: {$tecnico}\n"
                  . "📝 Falla: {$reporte->descripcion_falla}";
 
