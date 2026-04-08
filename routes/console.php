@@ -16,7 +16,7 @@ Artisan::command('telegram:test', function () {
     $this->info('Enviando mensaje de prueba a Telegram...');
     
     $tgService = new TelegramService();
-    $sent = $tgService->sendMessage("🤖 *Hola!* Este es un mensaje de prueba desde tu servidor Laravel confirmando que la conexión y el bot de Telegram están funcionando correctamente.");
+    $sent = $tgService->sendMessage("Hola este mensaje es de prueba para saber si funciona la conexion");
     
     if ($sent) {
         $this->info('✅ ¡Mensaje enviado con éxito! Revisa tu celular.');
