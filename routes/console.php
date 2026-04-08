@@ -12,6 +12,19 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
+Artisan::command('telegram:test', function () {
+    $this->info('Enviando mensaje de prueba a Telegram...');
+    
+    $tgService = new TelegramService();
+    $sent = $tgService->sendMessage("🤖 *Hola!* Este es un mensaje de prueba desde tu servidor Laravel confirmando que la conexión y el bot de Telegram están funcionando correctamente.");
+    
+    if ($sent) {
+        $this->info('✅ ¡Mensaje enviado con éxito! Revisa tu celular.');
+    } else {
+        $this->error('❌ Error al enviar el mensaje. Revisa tu .env y los logs en storage/logs/laravel.log');
+    }
+})->purpose('Test Telegram Bot credentials sending a message');
+
 Schedule::call(function () {
     $reportes = Reporte::with('maquina')
         ->whereIn('status', ['en_mantenimiento', 'abierto'])
