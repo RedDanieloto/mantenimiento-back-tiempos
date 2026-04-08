@@ -13,29 +13,43 @@ class TelegramService
     public function sendMessage(string $message): bool
     {
         $botToken = env('TELEGRAM_BOT_TOKEN');
-        $chatId = env('TELEGRAM_CHAT_ID');
+        $chatIds = collect(explode(',', (string) env('TELEGRAM_CHAT_IDS', '')))
+            ->map(fn (string $id) => trim($id))
+            ->filter()
+            ->values();
 
-        if (!$botToken || !$chatId) {
-            Log::warning('TELEGRAM_BOT_TOKEN o TELEGRAM_CHAT_ID no están configurados. No se envió el mensaje.');
+        // Backward compatibility for legacy single chat configuration.
+        if ($chatIds->isEmpty() && env('TELEGRAM_CHAT_ID')) {
+            $chatIds = collect([trim((string) env('TELEGRAM_CHAT_ID'))]);
+        }
+
+        if (!$botToken || $chatIds->isEmpty()) {
+            Log::warning('TELEGRAM_BOT_TOKEN o TELEGRAM_CHAT_IDS no están configurados. No se envió el mensaje.');
             return false;
         }
 
         try {
             $apiUrl = "https://api.telegram.org/bot{$botToken}/sendMessage";
 
-            $response = Http::post($apiUrl, [
-                'chat_id' => $chatId,
-                'text' => $message,
-                'parse_mode' => 'Markdown'
-            ]);
+            $allSuccessful = true;
 
-            if ($response->successful()) {
-                Log::info("Telegram message sent successfully to Chat ID {$chatId}");
-                return true;
+            foreach ($chatIds as $chatId) {
+                $response = Http::post($apiUrl, [
+                    'chat_id' => $chatId,
+                    'text' => $message,
+                    'parse_mode' => 'Markdown',
+                ]);
+
+                if ($response->successful()) {
+                    Log::info("Telegram message sent successfully to Chat ID {$chatId}");
+                    continue;
+                }
+
+                $allSuccessful = false;
+                Log::error("Failed to send Telegram message to Chat ID {$chatId}: " . $response->body());
             }
 
-            Log::error("Failed to send Telegram message: " . $response->body());
-            return false;
+            return $allSuccessful;
 
         } catch (\Exception $e) {
             Log::error("Exception sending Telegram message: " . $e->getMessage());
