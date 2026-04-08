@@ -25,6 +25,87 @@ Artisan::command('telegram:test', function () {
     }
 })->purpose('Test Telegram Bot credentials sending a message');
 
+Artisan::command('telegram:reenviar-atrasados {--dry-run : Solo lista candidatos, no envia mensajes} {--incluir-enviados : Incluye reportes ya marcados con alerta_1h_enviada=1} {--solo-abiertos : Solo considera reportes con status abierto}', function () {
+    $this->info('Buscando reportes atrasados (20+ minutos)...');
+
+    $threshold = Carbon::now()->subMinutes(20);
+    $statuses = $this->option('solo-abiertos')
+        ? ['abierto']
+        : ['en_mantenimiento', 'abierto'];
+
+    $query = Reporte::with('maquina')
+        ->whereIn('status', $statuses)
+        ->where(function ($q) use ($threshold) {
+            $q->where(function ($sub1) use ($threshold) {
+                $sub1->whereNotNull('aceptado_en')
+                    ->where('aceptado_en', '<=', $threshold);
+            })->orWhere(function ($sub2) use ($threshold) {
+                $sub2->whereNull('aceptado_en')
+                    ->where('inicio', '<=', $threshold);
+            });
+        });
+
+    if (!$this->option('incluir-enviados')) {
+        $query->where('alerta_1h_enviada', false);
+    }
+
+    $reportes = $query->orderBy('inicio')->get();
+
+    if ($reportes->isEmpty()) {
+        $this->info('No hay reportes atrasados para notificar.');
+        return 0;
+    }
+
+    $this->info("Se encontraron {$reportes->count()} reporte(s).\n");
+
+    $dryRun = (bool) $this->option('dry-run');
+    $tgService = new TelegramService();
+    $enviados = 0;
+    $fallidos = 0;
+    $now = Carbon::now();
+
+    foreach ($reportes as $reporte) {
+        /** @var \App\Models\Reporte $reporte */
+        $nombreMaquina = $reporte->maquina ? $reporte->maquina->name : 'N/A';
+        $tecnico = $reporte->tecnico_nombre ?: 'Sin asignar';
+        $tiempo = $reporte->aceptado_en ? 'mantenimiento' : 'reaccion';
+        $minutos = (int) ($reporte->aceptado_en
+            ? $reporte->aceptado_en->diffInMinutes($now)
+            : $reporte->inicio->diffInMinutes($now));
+
+        if ($dryRun) {
+            $this->line("[DRY RUN] #{$reporte->id} | {$nombreMaquina} | {$tiempo} | {$minutos} min");
+            continue;
+        }
+
+        $mensaje = "⏳ *Alerta de Tiempo (Atrasada)*\n"
+            . "El reporte #{$reporte->id} de la máquina *{$nombreMaquina}* lleva {$minutos} minutos en {$tiempo}.\n"
+            . "👨‍🔧 Técnico: {$tecnico}\n"
+            . "📝 Falla: {$reporte->descripcion_falla}";
+
+        $sent = $tgService->sendMessage($mensaje);
+
+        if ($sent) {
+            $reporte->alerta_1h_enviada = true;
+            $reporte->save();
+            $enviados++;
+            $this->line("✅ Enviado reporte #{$reporte->id}");
+            continue;
+        }
+
+        $fallidos++;
+        $this->error("❌ Fallo reporte #{$reporte->id}");
+    }
+
+    if ($dryRun) {
+        $this->info("\nDry run finalizado. No se envio ningun mensaje.");
+        return 0;
+    }
+
+    $this->info("\nProceso finalizado. Enviados: {$enviados}. Fallidos: {$fallidos}.");
+    return $fallidos > 0 ? 1 : 0;
+})->purpose('Reenviar alertas atrasadas de reportes con 20+ minutos');
+
 Schedule::call(function () {
     $reportes = Reporte::with('maquina')
         ->whereIn('status', ['en_mantenimiento', 'abierto'])
