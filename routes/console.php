@@ -31,10 +31,10 @@ Schedule::call(function () {
         ->where(function($q) {
             $q->where(function($sub1) {
                 $sub1->whereNotNull('aceptado_en')
-                     ->where('aceptado_en', '<=', Carbon::now()->subMinutes(60));
+                     ->where('aceptado_en', '<=', Carbon::now()->subMinutes(20));
             })->orWhere(function($sub2) {
                 $sub2->whereNull('aceptado_en')
-                     ->where('inicio', '<=', Carbon::now()->subMinutes(60));
+                     ->where('inicio', '<=', Carbon::now()->subMinutes(20));
             });
         })
         ->where('alerta_1h_enviada', false)
@@ -51,7 +51,7 @@ Schedule::call(function () {
         $tiempo = $reporte->aceptado_en ? 'mantenimiento' : 'espera';
         
         $mensaje = "⏳ *Alerta de Tiempo*\n"
-                 . "El reporte #{$reporte->id} de la máquina *{$nombreMaquina}* lleva más de 1 hora en {$tiempo}.\n"
+                 . "El reporte #{$reporte->id} de la máquina *{$nombreMaquina}* lleva más de 20 minutos en {$tiempo}.\n"
                  . "👨‍🔧 Técnico: {$tecnico}\n"
                  . "📝 Falla: {$reporte->descripcion_falla}";
 
