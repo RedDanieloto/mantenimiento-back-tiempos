@@ -84,7 +84,7 @@ Artisan::command('telegram:reenviar-atrasados {--dry-run : Solo lista candidatos
         }
 
         $mensaje = "⏳ *Alerta de Tiempo (Atrasada)*\n"
-            . "El reporte #{$reporte->id} de la máquina *{$nombreMaquina}* lleva {$minutos} minutos en {$tiempo}.\n"
+            . "El reporte #{$reporte->id} de la máquina *{$nombreMaquina}* en la linea *{$reporte->linea}* lleva {$minutos} minutos en {$tiempo}.\n"
             . "👨‍🔧 Técnico: {$tecnico}\n"
             . "📝 Falla: {$reporte->descripcion_falla}";
 
@@ -144,7 +144,7 @@ Schedule::call(function () {
         $tiempo = $reporte->aceptado_en ? 'mantenimiento' : 'reacción';
         
         $mensaje = "⏳ *Alerta de Tiempo*\n"
-                 . "El reporte #{$reporte->id} de la máquina *{$nombreMaquina}* lleva más de 20 minutos en {$tiempo}.\n"
+                 . "El reporte #{$reporte->id} de la máquina *{$nombreMaquina}* en la linea *{$reporte->linea}* lleva más de 20 minutos en {$tiempo}.\n"
                  . "👨‍🔧 Técnico: {$tecnico}\n"
                  . "📝 Falla: {$reporte->descripcion_falla}";
 
