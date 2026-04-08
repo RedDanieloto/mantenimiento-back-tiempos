@@ -6,6 +6,7 @@ use App\Models\Reporte;
 use App\Models\Area;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Carbon\Carbon;
 
 class ReporteManagementController extends Controller
@@ -122,7 +123,7 @@ class ReporteManagementController extends Controller
             ];
 
             // Si pasa de no aceptado a aceptado, habilita alerta de 20 min en mantenimiento.
-            if (!$wasAccepted && $aceptado) {
+            if (!$wasAccepted && $aceptado && Schema::hasColumn('reportes', 'alerta_1h_enviada')) {
                 $updateData['alerta_1h_enviada'] = false;
             }
 

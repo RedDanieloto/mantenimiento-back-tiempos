@@ -10,6 +10,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 
 
@@ -373,15 +374,21 @@ class ReporteController extends Controller
             return response()->json(['message' => 'El reporte ya fue finalizado.'], 409);
         }
 
-        $reporte->update([
+        $updateData = [
             'tecnico_employee_number' => $tec->employee_number,
             'tecnico_nombre'          => $tec->name,
             'aceptado_en'             => now(),
             'status'                  => 'en_mantenimiento',
+        ];
+
+        // Compatibilidad: evita error SQL si en producción aún no existe la columna.
+        if (Schema::hasColumn('reportes', 'alerta_1h_enviada')) {
             // Permite alertar también los 20 min de mantenimiento,
             // incluso si ya se alertó durante los 20 min de reacción.
-            'alerta_1h_enviada'       => false,
-        ]);
+            $updateData['alerta_1h_enviada'] = false;
+        }
+
+        $reporte->update($updateData);
 
         $fresh = $reporte->fresh(['user','tecnico','maquina.linea.area']);
         $reporteService = new \App\Services\ReporteService();

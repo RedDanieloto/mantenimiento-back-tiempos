@@ -3,7 +3,9 @@
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schedule;
+use Illuminate\Support\Facades\Schema;
 use App\Models\Reporte;
 use App\Services\TelegramService;
 use Carbon\Carbon;
@@ -29,6 +31,7 @@ Artisan::command('telegram:reenviar-atrasados {--dry-run : Solo lista candidatos
     $this->info('Buscando reportes atrasados (20+ minutos)...');
 
     $threshold = Carbon::now()->subMinutes(20);
+    $hasAlertFlag = Schema::hasColumn('reportes', 'alerta_1h_enviada');
     $statuses = $this->option('solo-abiertos')
         ? ['abierto']
         : ['en_mantenimiento', 'abierto'];
@@ -45,8 +48,10 @@ Artisan::command('telegram:reenviar-atrasados {--dry-run : Solo lista candidatos
             });
         });
 
-    if (!$this->option('incluir-enviados')) {
+    if (!$this->option('incluir-enviados') && $hasAlertFlag) {
         $query->where('alerta_1h_enviada', false);
+    } elseif (!$this->option('incluir-enviados') && !$hasAlertFlag) {
+        $this->warn('La columna alerta_1h_enviada no existe; no se puede filtrar solo pendientes.');
     }
 
     $reportes = $query->orderBy('inicio')->get();
@@ -86,8 +91,10 @@ Artisan::command('telegram:reenviar-atrasados {--dry-run : Solo lista candidatos
         $sent = $tgService->sendMessage($mensaje);
 
         if ($sent) {
-            $reporte->alerta_1h_enviada = true;
-            $reporte->save();
+            if ($hasAlertFlag) {
+                $reporte->alerta_1h_enviada = true;
+                $reporte->save();
+            }
             $enviados++;
             $this->line("✅ Enviado reporte #{$reporte->id}");
             continue;
@@ -107,6 +114,11 @@ Artisan::command('telegram:reenviar-atrasados {--dry-run : Solo lista candidatos
 })->purpose('Reenviar alertas atrasadas de reportes con 20+ minutos');
 
 Schedule::call(function () {
+    if (!Schema::hasColumn('reportes', 'alerta_1h_enviada')) {
+        Log::warning('Scheduler de Telegram omitido: falta columna reportes.alerta_1h_enviada. Ejecuta migraciones.');
+        return;
+    }
+
     $reportes = Reporte::with('maquina')
         ->whereIn('status', ['en_mantenimiento', 'abierto'])
         ->where(function($q) {
