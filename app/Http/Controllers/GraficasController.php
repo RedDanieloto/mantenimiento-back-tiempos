@@ -48,13 +48,19 @@ class GraficasController extends Controller
             ->take(30)
             ->values();
 
+        // Si no hay ningún filtro de fecha, establecer el mes actual como default
+        $monthDefault = $request->input('month');
+        if (!$request->filled('day') && !$request->filled('week') && !$request->filled('from') && !$request->filled('to') && !$monthDefault) {
+            $monthDefault = Carbon::now($this->tz)->format('Y-m');
+        }
+
         return view('graficas.index', [
             'filters' => [
                 'day'      => $request->input('day'),
                 'from'     => $request->input('from'),
                 'to'       => $request->input('to'),
                 'week'     => $request->input('week'),
-                'month'    => $request->input('month'),
+                'month'    => $monthDefault,
                 'area_id'  => $request->input('area_id'),
                 'linea_id' => $request->input('linea_id'),
                 'maquina_id' => $request->input('maquina_id'),
