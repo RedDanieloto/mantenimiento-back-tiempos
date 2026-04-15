@@ -558,7 +558,7 @@
                 </div>
                 <div>
                     <label>Mes</label>
-                    <input type="month" name="month" value="{{ $filters['month'] }}">
+                    <input type="month" name="month" value="{{ $filters['month'] ?? now()->format('Y-m') }}">
                 </div>
                 <div>
                     <label>Turno</label>
