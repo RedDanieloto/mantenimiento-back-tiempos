@@ -148,6 +148,11 @@ class GraficasController extends Controller
             } catch (\Throwable $e) {
               
             }
+        } else {
+            // Default: mes actual sin parámetro
+            $start = Carbon::now($this->tz)->startOfMonth()->setTime(7, 0, 0);
+            $end   = Carbon::now($this->tz)->addMonth()->startOfMonth()->setTime(7, 0, 0);
+            $q->whereBetween('inicio', [$start, $end]);
         }
     }
 
