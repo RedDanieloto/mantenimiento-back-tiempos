@@ -83,6 +83,10 @@ Route::get('/herramentales-estadisticas', [HerramentalStatsController::class, 'i
 Route::prefix('estadisticas')->group(function () {
     Route::get('/health',        [EstadisticasApiController::class, 'health']);       
     Route::get('/resumen',       [EstadisticasApiController::class, 'resumen']);       
+    Route::get('/mttr',          [EstadisticasApiController::class, 'mttr']);
+    Route::get('/mtbf',          [EstadisticasApiController::class, 'mtbf']);
+    Route::get('/tiempo-total',  [EstadisticasApiController::class, 'tiempoTotal']);
+    Route::get('/reportes-abiertos', [EstadisticasApiController::class, 'reportesAbiertos']);
     Route::get('/graficas',      [EstadisticasApiController::class, 'graficas']);      
     Route::get('/scrap',         [EstadisticasApiController::class, 'scrap']);
     Route::get('/tendencias',    [EstadisticasApiController::class, 'tendencias']);    
