@@ -512,7 +512,7 @@ class EstadisticasApiController extends Controller
 
     /**
      * Parsea el periodo desde/hasta de los query params.
-     * Soporta: desde/hasta, day, week, month
+      * Soporta: desde/hasta, inicio/fin, day, week, month
      * Default: último mes
      */
     private function parsePeriodo(Request $request): array
@@ -526,10 +526,13 @@ class EstadisticasApiController extends Controller
         } elseif ($request->filled('month')) {
             $desde = Carbon::parse($request->input('month') . '-01', $this->tz)->setTime(7, 0, 0);
             $hasta = (clone $desde)->addMonth();
-        } elseif ($request->filled('desde')) {
-            $desde = Carbon::parse((string) $request->input('desde'), $this->tz)->startOfDay();
-            $hasta = $request->filled('hasta')
-                ? Carbon::parse((string) $request->input('hasta'), $this->tz)->endOfDay()
+        } elseif ($request->filled('desde') || $request->filled('inicio')) {
+            $desdeInput = (string) ($request->input('desde') ?? $request->input('inicio'));
+            $hastaInput = (string) ($request->input('hasta') ?? $request->input('fin'));
+
+            $desde = Carbon::parse($desdeInput, $this->tz)->startOfDay();
+            $hasta = $hastaInput !== ''
+                ? Carbon::parse($hastaInput, $this->tz)->endOfDay()
                 : Carbon::now($this->tz)->endOfDay();
         } else {
             // Default: último mes
