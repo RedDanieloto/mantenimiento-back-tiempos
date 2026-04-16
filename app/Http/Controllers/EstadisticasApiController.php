@@ -512,7 +512,7 @@ class EstadisticasApiController extends Controller
 
     /**
      * Parsea el periodo desde/hasta de los query params.
-      * Soporta: desde/hasta, inicio/fin, day, week, month
+      * Soporta: desde/hasta, inicio/fin, from/to, day, week, month
      * Default: último mes
      */
     private function parsePeriodo(Request $request): array
@@ -526,14 +526,29 @@ class EstadisticasApiController extends Controller
         } elseif ($request->filled('month')) {
             $desde = Carbon::parse($request->input('month') . '-01', $this->tz)->setTime(7, 0, 0);
             $hasta = (clone $desde)->addMonth();
-        } elseif ($request->filled('desde') || $request->filled('inicio')) {
-            $desdeInput = (string) ($request->input('desde') ?? $request->input('inicio'));
-            $hastaInput = (string) ($request->input('hasta') ?? $request->input('fin'));
+        } elseif ($request->filled('desde') || $request->filled('inicio') || $request->filled('from') || $request->filled('to')) {
+            $desdeInput = (string) ($request->input('desde')
+                ?? $request->input('inicio')
+                ?? $request->input('from')
+                ?? $request->input('to'));
 
-            $desde = Carbon::parse($desdeInput, $this->tz)->startOfDay();
-            $hasta = $hastaInput !== ''
-                ? Carbon::parse($hastaInput, $this->tz)->endOfDay()
-                : Carbon::now($this->tz)->endOfDay();
+            $hastaInputRaw = $request->input('hasta')
+                ?? $request->input('fin')
+                ?? $request->input('to');
+            $hastaInput = $hastaInputRaw === null ? '' : (string) $hastaInputRaw;
+
+            // Mantener consistencia con la app de gráficas: día operativo de 07:00 a 07:00.
+            $desde = Carbon::parse($desdeInput, $this->tz)->setTime(7, 0, 0);
+
+            if ($hastaInput !== '') {
+                $hasta = Carbon::parse($hastaInput, $this->tz)->setTime(7, 0, 0)->addDay();
+            } elseif ($request->filled('inicio') || $request->filled('fin') || $request->filled('from') || $request->filled('to')) {
+                // Si viene formato tipo día/rango sin fin explícito, cerrar al final del mismo día operativo.
+                $hasta = Carbon::parse($desdeInput, $this->tz)->setTime(7, 0, 0)->addDay();
+            } else {
+                // Compatibilidad hacia atrás para `desde` sin `hasta`.
+                $hasta = Carbon::now($this->tz)->endOfDay();
+            }
         } else {
             // Default: último mes
             $desde = Carbon::now($this->tz)->subMonth()->startOfDay();
