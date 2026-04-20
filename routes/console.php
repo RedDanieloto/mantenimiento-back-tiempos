@@ -36,7 +36,7 @@ Artisan::command('telegram:reenviar-atrasados {--dry-run : Solo lista candidatos
         ? ['abierto']
         : ['en_mantenimiento', 'abierto'];
 
-    $query = Reporte::with(['maquina.linea'])
+    $query = Reporte::with(['maquina.linea', 'area'])
         ->whereIn('status', $statuses)
         ->where(function ($q) use ($threshold) {
             $q->where(function ($sub1) use ($threshold) {
@@ -71,6 +71,7 @@ Artisan::command('telegram:reenviar-atrasados {--dry-run : Solo lista candidatos
 
     foreach ($reportes as $reporte) {
         /** @var \App\Models\Reporte $reporte */
+        $areaName = $reporte->area?->name ?? 'Sin area';
         $nombreMaquina = $reporte->maquina ? $reporte->maquina->name : 'N/A';
         $linea = $reporte->maquina?->linea?->name ?? 'N/A';
         $tecnico = $reporte->tecnico_nombre ?: 'Sin asignar';
@@ -86,10 +87,11 @@ Artisan::command('telegram:reenviar-atrasados {--dry-run : Solo lista candidatos
 
         $mensaje = "⏳ *Alerta de Tiempo (Atrasada)*\n"
             . "El reporte #{$reporte->id} de la máquina *{$nombreMaquina}* en la linea *{$linea}* lleva {$minutos} minutos en {$tiempo}.\n"
+            . "🏭 Area: {$areaName}\n"
             . "👨‍🔧 Técnico: {$tecnico}\n"
             . "📝 Falla: {$reporte->descripcion_falla}";
 
-        $sent = $tgService->sendMessage($mensaje);
+        $sent = $tgService->sendMessageByArea($mensaje, $areaName);
 
         if ($sent) {
             if ($hasAlertFlag) {
@@ -120,7 +122,7 @@ Schedule::call(function () {
         return;
     }
 
-    $reportes = Reporte::with(['maquina.linea'])
+    $reportes = Reporte::with(['maquina.linea', 'area'])
         ->whereIn('status', ['en_mantenimiento', 'abierto'])
         ->where(function($q) {
             $q->where(function($sub1) {
@@ -140,6 +142,7 @@ Schedule::call(function () {
 
     foreach ($reportes as $reporte) {
         /** @var \App\Models\Reporte $reporte */
+        $areaName = $reporte->area?->name ?? 'Sin area';
         $nombreMaquina = $reporte->maquina ? $reporte->maquina->name : 'N/A';
         $linea = $reporte->maquina?->linea?->name ?? 'N/A';
         $tecnico = $reporte->tecnico_nombre ?: 'Sin asignar';
@@ -147,10 +150,11 @@ Schedule::call(function () {
         
         $mensaje = "⏳ *Alerta de Tiempo*\n"
                  . "El reporte #{$reporte->id} de la máquina *{$nombreMaquina}* en la linea *{$linea}* lleva más de 20 minutos en {$tiempo}.\n"
+                 . "🏭 Area: {$areaName}\n"
                  . "👨‍🔧 Técnico: {$tecnico}\n"
                  . "📝 Falla: {$reporte->descripcion_falla}";
 
-        $sent = $tgService->sendMessage($mensaje);
+        $sent = $tgService->sendMessageByArea($mensaje, $areaName);
 
         if ($sent) {
             $reporte->alerta_1h_enviada = true;
