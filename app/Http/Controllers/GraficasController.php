@@ -125,15 +125,15 @@ class GraficasController extends Controller
             });
         }
         if ($request->filled('day')) {
-            $start = Carbon::parse((string)$request->input('day'), $this->tz)->setTime(7, 0, 0);
-            $end   = (clone $start)->addDay();
+            $start = Carbon::parse((string)$request->input('day'), $this->tz)->startOfDay();
+            $end   = (clone $start)->endOfDay();
             $q->whereBetween('inicio', [$start, $end]);
         } elseif ($request->filled('from') || $request->filled('to')) {
             $fromDay = $request->input('from');
             $toDay   = $request->input('to', $fromDay);
             if ($fromDay) {
-                $start = Carbon::parse((string)$fromDay, $this->tz)->setTime(7, 0, 0);
-                $end   = Carbon::parse((string)$toDay, $this->tz)->setTime(7, 0, 0)->addDay();
+                $start = Carbon::parse((string)$fromDay, $this->tz)->startOfDay();
+                $end   = Carbon::parse((string)$toDay, $this->tz)->endOfDay();
                 $q->whereBetween('inicio', [$start, $end]);
             }
         } elseif ($request->filled('week')) { 
@@ -141,23 +141,23 @@ class GraficasController extends Controller
             if (preg_match('/^(\d{4})-W(\d{2})$/', $weekStr, $m)) {
                 $year = (int)$m[1];
                 $week = (int)$m[2];
-                $start = Carbon::now($this->tz)->setISODate($year, $week, 1)->setTime(7, 0, 0);
-                $end   = (clone $start)->addDays(7); 
+                $start = Carbon::now($this->tz)->setISODate($year, $week, 1)->startOfDay();
+                $end   = (clone $start)->addDays(6)->endOfDay(); 
                 $q->whereBetween('inicio', [$start, $end]);
             }
         } elseif ($request->filled('month')) { 
             $month = $request->input('month');
             try {
-                $start = Carbon::parse($month.'-01', $this->tz)->setTime(7, 0, 0);
-                $end   = (clone $start)->addMonth();
+                $start = Carbon::parse($month.'-01', $this->tz)->startOfDay();
+                $end   = (clone $start)->endOfMonth()->endOfDay();
                 $q->whereBetween('inicio', [$start, $end]);
             } catch (\Throwable $e) {
               
             }
         } else {
             // Default: mes actual sin parámetro
-            $start = Carbon::now($this->tz)->startOfMonth()->setTime(7, 0, 0);
-            $end   = Carbon::now($this->tz)->addMonth()->startOfMonth()->setTime(7, 0, 0);
+            $start = Carbon::now($this->tz)->startOfMonth()->startOfDay();
+            $end   = (clone $start)->endOfMonth()->endOfDay();
             $q->whereBetween('inicio', [$start, $end]);
         }
     }
@@ -233,37 +233,37 @@ class GraficasController extends Controller
             })
             ->sortByDesc('seconds')->take(10)->values();
         if ($request->filled('day')) {
-            $minDate = Carbon::parse((string)$request->input('day'), $this->tz)->setTime(7, 0, 0);
-            $maxDate = (clone $minDate)->addDay();
+            $minDate = Carbon::parse((string)$request->input('day'), $this->tz)->startOfDay();
+            $maxDate = (clone $minDate)->endOfDay();
         } elseif ($request->filled('week') && preg_match('/^(\\d{4})-W(\\d{2})$/', (string)$request->input('week'), $m)) {
             $year = (int)$m[1];
             $week = (int)$m[2];
-            $minDate = Carbon::now($this->tz)->setISODate($year, $week, 1)->setTime(7, 0, 0);
-            $maxDate = (clone $minDate)->addDays(7);
+            $minDate = Carbon::now($this->tz)->setISODate($year, $week, 1)->startOfDay();
+            $maxDate = (clone $minDate)->addDays(6)->endOfDay();
         } elseif ($request->filled('month')) {
-            $minDate = Carbon::parse($request->input('month').'-01', $this->tz)->setTime(7, 0, 0);
-            $maxDate = (clone $minDate)->addMonth();
+            $minDate = Carbon::parse($request->input('month').'-01', $this->tz)->startOfDay();
+            $maxDate = (clone $minDate)->endOfMonth()->endOfDay();
         } elseif ($request->filled('from') || $request->filled('to')) {
             $fromDay = $request->input('from');
             $toDay = $request->input('to', $fromDay);
             if ($fromDay) {
-                $minDate = Carbon::parse((string)$fromDay, $this->tz)->setTime(7, 0, 0);
-                $maxDate = Carbon::parse((string)$toDay, $this->tz)->setTime(7, 0, 0)->addDay();
+                $minDate = Carbon::parse((string)$fromDay, $this->tz)->startOfDay();
+                $maxDate = Carbon::parse((string)$toDay, $this->tz)->endOfDay();
             } else {
-                $minDate = $reportes->min('inicio') ?: Carbon::now($this->tz)->startOfMonth()->setTime(7, 0, 0);
-                $maxDate = $reportes->max('inicio') ?: (clone $minDate)->endOfMonth()->setTime(7, 0, 0)->addDay();
+                $minDate = $reportes->min('inicio') ?: Carbon::now($this->tz)->startOfMonth()->startOfDay();
+                $maxDate = $reportes->max('inicio') ?: (clone $minDate)->endOfMonth()->endOfDay();
             }
         } else {
             if ($reportes->isNotEmpty()) {
                 $minDate = $reportes->min('inicio');
                 $maxDate = $reportes->max('inicio');
             } else {
-                $minDate = Carbon::now($this->tz)->startOfMonth()->setTime(7, 0, 0);
-                $maxDate = (clone $minDate)->endOfMonth()->setTime(7, 0, 0)->addDay();
+                $minDate = Carbon::now($this->tz)->startOfMonth()->startOfDay();
+                $maxDate = (clone $minDate)->endOfMonth()->endOfDay();
             }
         }
-        $cursor = Carbon::parse($minDate, $this->tz)->setTime(7, 0, 0);
-        $end    = Carbon::parse($maxDate, $this->tz)->setTime(7, 0, 0)->addDay();
+        $cursor = Carbon::parse($minDate, $this->tz)->startOfDay();
+        $end    = Carbon::parse($maxDate, $this->tz)->endOfDay();
 
         $labelsDays = [];
         $seriesMttr = [];

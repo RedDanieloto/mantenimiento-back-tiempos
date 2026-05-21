@@ -74,7 +74,7 @@ curl -X GET "http://localhost:8000/api/areas/1/reportes?day=2026-01-16" \
 ```
 
 **Verificaciones:**
-- ✅ Solo reportes de 2026-01-16 (09:00:00 a 2026-01-17 07:00:00)
+- ✅ Solo reportes de 2026-01-16 (00:00:00 a 23:59:59)
 - ✅ `total` es pequeño (47 en lugar de 10,000)
 - ✅ Respuesta incluye relaciones (maquina, user, tecnico)
 - ✅ Tiempo de respuesta < 500ms

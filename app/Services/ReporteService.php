@@ -65,8 +65,8 @@ class ReporteService
         // ✅ FILTRO 1: Por fecha CON excepción para reportes abiertos/en_mantenimiento
         // Los reportes pendientes SIEMPRE se muestran (sin importar fecha)
         if ($day) {
-            $start = Carbon::parse($day, $this->tz)->setTime(7, 0, 0);
-            $end   = (clone $start)->addDay();
+            $start = Carbon::parse($day, $this->tz)->startOfDay();
+            $end   = (clone $start)->endOfDay();
             
             // Query compuesta: 
             // (reportes del día) OR (reportes abiertos/en_mantenimiento de cualquier fecha)

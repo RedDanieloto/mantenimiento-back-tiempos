@@ -518,14 +518,14 @@ class EstadisticasApiController extends Controller
     private function parsePeriodo(Request $request): array
     {
         if ($request->filled('day')) {
-            $desde = Carbon::parse((string) $request->input('day'), $this->tz)->setTime(7, 0, 0);
-            $hasta = (clone $desde)->addDay();
+            $desde = Carbon::parse((string) $request->input('day'), $this->tz)->startOfDay();
+            $hasta = (clone $desde)->endOfDay();
         } elseif ($request->filled('week') && preg_match('/^(\d{4})-W(\d{2})$/', (string) $request->input('week'), $m)) {
-            $desde = Carbon::now($this->tz)->setISODate((int) $m[1], (int) $m[2], 1)->setTime(7, 0, 0);
-            $hasta = (clone $desde)->addDays(7);
+            $desde = Carbon::now($this->tz)->setISODate((int) $m[1], (int) $m[2], 1)->startOfDay();
+            $hasta = (clone $desde)->addDays(6)->endOfDay();
         } elseif ($request->filled('month')) {
-            $desde = Carbon::parse($request->input('month') . '-01', $this->tz)->setTime(7, 0, 0);
-            $hasta = (clone $desde)->addMonth();
+            $desde = Carbon::parse($request->input('month') . '-01', $this->tz)->startOfDay();
+            $hasta = (clone $desde)->endOfMonth()->endOfDay();
         } elseif ($request->filled('desde') || $request->filled('inicio') || $request->filled('from') || $request->filled('to')) {
             $desdeInput = (string) ($request->input('desde')
                 ?? $request->input('inicio')
@@ -537,14 +537,14 @@ class EstadisticasApiController extends Controller
                 ?? $request->input('to');
             $hastaInput = $hastaInputRaw === null ? '' : (string) $hastaInputRaw;
 
-            // Mantener consistencia con la app de gráficas: día operativo de 07:00 a 07:00.
-            $desde = Carbon::parse($desdeInput, $this->tz)->setTime(7, 0, 0);
+            // Mantener consistencia con la app de gráficas: día calendario completo.
+            $desde = Carbon::parse($desdeInput, $this->tz)->startOfDay();
 
             if ($hastaInput !== '') {
-                $hasta = Carbon::parse($hastaInput, $this->tz)->setTime(7, 0, 0)->addDay();
+                $hasta = Carbon::parse($hastaInput, $this->tz)->endOfDay();
             } elseif ($request->filled('inicio') || $request->filled('fin') || $request->filled('from') || $request->filled('to')) {
-                // Si viene formato tipo día/rango sin fin explícito, cerrar al final del mismo día operativo.
-                $hasta = Carbon::parse($desdeInput, $this->tz)->setTime(7, 0, 0)->addDay();
+                // Si viene formato tipo día/rango sin fin explícito, cerrar al final del mismo día calendario.
+                $hasta = Carbon::parse($desdeInput, $this->tz)->endOfDay();
             } else {
                 // Compatibilidad hacia atrás para `desde` sin `hasta`.
                 $hasta = Carbon::now($this->tz)->endOfDay();
@@ -765,8 +765,8 @@ class EstadisticasApiController extends Controller
      */
     private function serieDiaria($reportes, Carbon $desde, Carbon $hasta, $secToHours): array
     {
-        $cursor = $desde->copy()->setTime(7, 0, 0);
-        $end = $hasta->copy()->setTime(7, 0, 0)->addDay();
+        $cursor = $desde->copy()->startOfDay();
+        $end = $hasta->copy()->endOfDay();
 
         $series = [];
 

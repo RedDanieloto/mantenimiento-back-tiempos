@@ -110,15 +110,15 @@ class ReportesExport implements FromQuery, WithHeadings, WithMapping, ShouldAuto
 
         $dateField = 'inicio';
         if ($this->request->filled('day')) {
-            $start = Carbon::parse($this->request->string('day'), $this->tz)->setTime(7, 0, 0);
-            $end   = (clone $start)->addDay();
+            $start = Carbon::parse($this->request->string('day'), $this->tz)->startOfDay();
+            $end   = (clone $start)->endOfDay();
             $q->whereBetween($dateField, [$start, $end]);
         } elseif ($this->request->filled('from') || $this->request->filled('to')) {
             $fromDay = $this->request->string('from');
             $toDay   = $this->request->string('to', $fromDay);
             if ($fromDay) {
-                $start = Carbon::parse($fromDay, $this->tz)->setTime(7, 0, 0);
-                $end   = Carbon::parse($toDay, $this->tz)->setTime(7, 0, 0)->addDay();
+                $start = Carbon::parse($fromDay, $this->tz)->startOfDay();
+                $end   = Carbon::parse($toDay, $this->tz)->endOfDay();
                 $q->whereBetween($dateField, [$start, $end]);
             }
         } elseif ($this->request->filled('week')) { // ISO week YYYY-Www
@@ -126,15 +126,15 @@ class ReportesExport implements FromQuery, WithHeadings, WithMapping, ShouldAuto
             if (preg_match('/^(\d{4})-W(\d{2})$/', $weekStr, $m)) {
                 $year = (int)$m[1];
                 $week = (int)$m[2];
-                $start = Carbon::now($this->tz)->setISODate($year, $week, 1)->setTime(7, 0, 0);
-                $end   = (clone $start)->addDays(7);
+                $start = Carbon::now($this->tz)->setISODate($year, $week, 1)->startOfDay();
+                $end   = (clone $start)->addDays(6)->endOfDay();
                 $q->whereBetween($dateField, [$start, $end]);
             }
         } elseif ($this->request->filled('month')) { // YYYY-MM
             $month = $this->request->input('month');
             try {
-                $start = Carbon::parse($month.'-01', $this->tz)->setTime(7, 0, 0);
-                $end   = (clone $start)->addMonth();
+                $start = Carbon::parse($month.'-01', $this->tz)->startOfDay();
+                $end   = (clone $start)->endOfMonth()->endOfDay();
                 $q->whereBetween($dateField, [$start, $end]);
             } catch (\Throwable $e) {
                 // formato inválido: ignorar

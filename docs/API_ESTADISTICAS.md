@@ -60,8 +60,8 @@ Aplicables a los endpoints: `/resumen`, `/graficas`, `/areas`, `/herramentales`,
 
 | Parámetro | Formato        | Ejemplo              | Descripción                            |
 |-----------|----------------|----------------------|----------------------------------------|
-| `day`     | `YYYY-MM-DD`   | `?day=2026-02-19`    | Un día específico (7:00 a 7:00)        |
-| `week`    | `YYYY-Wnn`     | `?week=2026-W08`     | Semana ISO (lunes 7:00 a lunes 7:00)   |
+| `day`     | `YYYY-MM-DD`   | `?day=2026-02-19`    | Un día específico (00:00 a 23:59:59)    |
+| `week`    | `YYYY-Wnn`     | `?week=2026-W08`     | Semana ISO (lunes 00:00 a domingo 23:59:59) |
 | `month`   | `YYYY-MM`      | `?month=2026-02`     | Mes completo                           |
 | `desde`   | `YYYY-MM-DD`   | `?desde=2026-01-01`  | Fecha inicio del rango                 |
 | `hasta`   | `YYYY-MM-DD`   | `?hasta=2026-02-19`  | Fecha fin del rango                    |

@@ -131,20 +131,20 @@ class ReporteController extends Controller
         }
         $dateField = 'inicio';
         if ($request->filled('day')) {
-            $start = Carbon::parse($request->string('day'), $this->tz)->setTime(7, 0, 0);
-            $end   = (clone $start)->addDay();
+            $start = Carbon::parse($request->string('day'), $this->tz)->startOfDay();
+            $end   = (clone $start)->endOfDay();
             $q->whereBetween($dateField, [$start, $end]);
         } elseif ($request->filled('from') || $request->filled('to')) {
             $fromDay = $request->string('from');
             $toDay   = $request->string('to', $fromDay);
             if ($fromDay) {
-                $start = Carbon::parse($fromDay, $this->tz)->setTime(7, 0, 0);
-                $end   = Carbon::parse($toDay, $this->tz)->setTime(7, 0, 0)->addDay();
+                $start = Carbon::parse($fromDay, $this->tz)->startOfDay();
+                $end   = Carbon::parse($toDay, $this->tz)->endOfDay();
                 $q->whereBetween($dateField, [$start, $end]);
             }
         } else {
-            $start = Carbon::now($this->tz)->setTime(7, 0, 0);
-            $end   = (clone $start)->addDay();
+            $start = Carbon::now($this->tz)->startOfDay();
+            $end   = (clone $start)->endOfDay();
             $q->whereBetween($dateField, [$start, $end]);
         }
         if ($request->filled('hour_from') || $request->filled('hour_to')) {
