@@ -484,6 +484,7 @@
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
 </head>
 <body>
 <main class="container">
@@ -767,6 +768,11 @@ function toggleTheme() {
     document.documentElement.setAttribute('data-theme', newTheme);
     localStorage.setItem('theme', newTheme);
     updateThemeUI(newTheme === 'dark');
+    
+    // Actualizar gráficas para aplicar dinámicamente los colores del tema
+    if (typeof Chart !== 'undefined' && Chart.instances) {
+        Object.values(Chart.instances).forEach(chart => chart.update());
+    }
 }
 
 function updateThemeUI(isDark) {
@@ -817,6 +823,30 @@ document.addEventListener('click', function(e) {
 updateDeptLabel();
 
 const M = @json($metrics);
+
+// Registrar el plugin de datalabels y configurar sus opciones globales por defecto
+Chart.register(ChartDataLabels);
+Chart.defaults.plugins.datalabels = {
+    color: function(context) {
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        return isDark ? '#e5e7eb' : '#1f2937';
+    },
+    font: {
+        weight: 'bold',
+        size: 10,
+        family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+    },
+    formatter: function(value) {
+        if (value === null || value === undefined) return '';
+        if (typeof value === 'number') {
+            return Number.isInteger(value) ? value : value.toFixed(2);
+        }
+        return value;
+    },
+    anchor: 'end',
+    align: 'top',
+    offset: 4
+};
 
 // Pantalla completa para un artículo contenedor del canvas
 function toggleFullscreen(canvasId) {
@@ -883,6 +913,15 @@ function pieChart(id, labels, data){
                 legend: {
                     position: 'bottom',
                     labels: { boxWidth: 12, padding: 15, font: { size: 11, weight: '600' } }
+                },
+                datalabels: {
+                    anchor: 'center',
+                    align: 'center',
+                    color: '#ffffff',
+                    font: {
+                        weight: 'bold',
+                        size: 11
+                    }
                 }
             }
         }
@@ -909,6 +948,7 @@ function barChart(id, labels, data, label, color){
             scales: {
                 y: {
                     beginAtZero: true,
+                    grace: '8%',
                     grid: { color: 'rgba(0,0,0,0.05)' }
                 },
                 x: {
@@ -970,12 +1010,12 @@ barChart('chartMtbfMaquina', M.mtbf_por_maquina.labels, M.mtbf_por_maquina.data,
 
 lineChart('chartSerieMttr', M.serie_diaria.labels, [
     { label: 'MTTR', data: M.serie_diaria.mttr, borderColor: colors.red, backgroundColor: 'rgba(239,68,68,.12)', tension: .4, fill: true },
-    { label: 'Meta MTTR 1h', data: M.serie_diaria.goal_mttr, borderColor: colors.red, borderDash: [8,4], pointRadius: 0, tension: 0, fill: false },
+    { label: 'Meta MTTR 1h', data: M.serie_diaria.goal_mttr, borderColor: colors.red, borderDash: [8,4], pointRadius: 0, tension: 0, fill: false, datalabels: { display: false } },
 ], 2);
 
 lineChart('chartSerieMtbf', M.serie_diaria.labels, [
     { label: 'MTBF', data: M.serie_diaria.mtbf, borderColor: colors.green, backgroundColor: 'rgba(16,185,129,.12)', tension: .4, fill: true },
-    { label: 'Meta MTBF 10h', data: M.serie_diaria.goal_mtbf, borderColor: colors.green, borderDash: [8,4], pointRadius: 0, tension: 0, fill: false },
+    { label: 'Meta MTBF 10h', data: M.serie_diaria.goal_mtbf, borderColor: colors.green, borderDash: [8,4], pointRadius: 0, tension: 0, fill: false, datalabels: { display: false } },
 ], 12);
 
 const abiertosLabels = M.abiertos_dia.labels;
@@ -1002,7 +1042,10 @@ new Chart(ctxAb, {
                 borderDash: [8,4],
                 pointRadius: 0,
                 borderWidth: 2.5,
-                fill: false
+                fill: false,
+                datalabels: {
+                    display: false
+                }
             }
         ]
     },
@@ -1012,6 +1055,7 @@ new Chart(ctxAb, {
         scales: {
             y: {
                 beginAtZero: true,
+                grace: '8%',
                 grid: { color: 'rgba(0,0,0,0.05)' }
             },
             x: {
@@ -1051,6 +1095,15 @@ new Chart(ctxResume, {
             legend: {
                 position: 'bottom',
                 labels: { boxWidth: 12, padding: 15, font: { size: 11, weight: '600' } }
+            },
+            datalabels: {
+                anchor: 'center',
+                align: 'center',
+                color: '#ffffff',
+                font: {
+                    weight: 'bold',
+                    size: 11
+                }
             }
         }
     }
