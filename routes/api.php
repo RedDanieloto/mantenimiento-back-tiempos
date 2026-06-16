@@ -22,6 +22,7 @@ Route::delete('/user/{id}', [UserController::class, 'destroy']);
 
 //=====================[Reportes]=============================
 // ===== Rutas scoped por área =====
+Route::get('/reportesTotales', [ReporteController::class,'pendientesTotales']);
 Route::prefix('/areas/{area}')->group(function () {
     Route::get('/reportes', [ReporteController::class, 'indexByArea']);
     Route::get('/reportes/pendientes', [ReporteController::class, 'pendientesByArea']);

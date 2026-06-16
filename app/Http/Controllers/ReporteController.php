@@ -466,6 +466,49 @@ class ReporteController extends Controller
         
         return response()->json($reportes);
     }
+    public function pendientesTotales(Request $request)
+    {
+        $page = $request->query('page', 1);
+        $perPage = min((int) $request->query('per_page', 50), 100);
+        $estadosTerminados = ['ok', 'OK', 'finalizado', 'cerrado'];
+        
+        $reportes = Reporte::whereNotIn('status', $estadosTerminados)
+            ->select([
+                'id',
+                'area_id',
+                'maquina_id',
+                'employee_number',
+                'tecnico_employee_number',
+                'status',
+                'falla',
+                'scrap',
+                'turno',
+                'descripcion_falla',
+                'descripcion_resultado',
+                'refaccion_utilizada',
+                'departamento',
+                'lider_nombre',
+                'tecnico_nombre',
+                'herramental_id',
+                'inicio',
+                'aceptado_en',
+                'fin',
+                'created_at',
+                'updated_at'
+            ])
+            ->with([
+                'maquina:id,name,linea_id',
+                'maquina.linea:id,name,area_id',
+                'user:employee_number,name,role,turno',
+                'tecnico:employee_number,name,role,turno',
+                'area:id,name',
+                'herramental:id,name'
+            ])
+            ->orderBy('inicio', 'desc')
+            ->paginate($perPage, ['*'], 'page', $page);
+        
+        return response()->json($reportes);
+    }
     public function pendientesByArea(Request $request, Area $area)
     {
         $page = $request->query('page', 1);
