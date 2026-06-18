@@ -315,13 +315,23 @@ class ReporteController extends Controller
             return response()->json(['message' => 'Solo los líderes pueden crear reportes.'], 403);
         }
         $now = now();
+        $isHerramental = isset($data['herramental_id']) && $data['herramental_id'] !== null;
+
         $reporteActivo = Reporte::where('maquina_id', $data['maquina_id'])
             ->where('inicio', '>=', (clone $now)->subMinutes(15))
             ->whereIn('status', ['abierto', 'en_mantenimiento'])
+            ->where(function ($query) use ($isHerramental) {
+                if ($isHerramental) {
+                    $query->whereNotNull('herramental_id');
+                } else {
+                    $query->whereNull('herramental_id');
+                }
+            })
             ->exists();
         if ($reporteActivo) {
             return response()->json(['message' => 'Ya existe un reporte activo para esta máquina en los últimos 15 minutos.'], 422);
         }
+
 
     $user    = $creator; 
         $maquina = Maquina::with('linea.area')->findOrFail($data['maquina_id']);

@@ -245,4 +245,87 @@ class ReporteHerramentalTest extends TestCase
             'status' => 'OK'
         ]);
     }
+
+    /** @test */
+    public function permite_crear_reporte_herramental_si_ya_existe_uno_general_activo()
+    {
+        // 1. Crear reporte sin herramental
+        $this->postJson('/api/reportes', [
+            'employee_number' => $this->lider->employee_number,
+            'maquina_id' => $this->maquina->id,
+            'turno' => 'A',
+            'descripcion_falla' => 'Falla general'
+        ])->assertStatus(201);
+
+        // 2. Crear reporte con herramental (debe permitirse)
+        $this->postJson('/api/reportes', [
+            'employee_number' => $this->lider->employee_number,
+            'maquina_id' => $this->maquina->id,
+            'turno' => 'A',
+            'descripcion_falla' => 'Falla de herramental',
+            'herramental_id' => $this->herramental->id
+        ])->assertStatus(201);
+    }
+
+    /** @test */
+    public function permite_crear_reporte_general_si_ya_existe_uno_de_herramental_activo()
+    {
+        // 1. Crear reporte con herramental
+        $this->postJson('/api/reportes', [
+            'employee_number' => $this->lider->employee_number,
+            'maquina_id' => $this->maquina->id,
+            'turno' => 'A',
+            'descripcion_falla' => 'Falla de herramental',
+            'herramental_id' => $this->herramental->id
+        ])->assertStatus(201);
+
+        // 2. Crear reporte sin herramental (debe permitirse)
+        $this->postJson('/api/reportes', [
+            'employee_number' => $this->lider->employee_number,
+            'maquina_id' => $this->maquina->id,
+            'turno' => 'A',
+            'descripcion_falla' => 'Falla general'
+        ])->assertStatus(201);
+    }
+
+    /** @test */
+    public function no_permite_crear_dos_reportes_del_mismo_tipo_activos()
+    {
+        // Caso A: Dos reportes generales sin herramental
+        $this->postJson('/api/reportes', [
+            'employee_number' => $this->lider->employee_number,
+            'maquina_id' => $this->maquina->id,
+            'turno' => 'A',
+            'descripcion_falla' => 'Falla general 1'
+        ])->assertStatus(201);
+
+        $this->postJson('/api/reportes', [
+            'employee_number' => $this->lider->employee_number,
+            'maquina_id' => $this->maquina->id,
+            'turno' => 'A',
+            'descripcion_falla' => 'Falla general 2'
+        ])->assertStatus(422);
+    }
+
+    /** @test */
+    public function no_permite_crear_dos_reportes_de_herramental_activos()
+    {
+        // Caso B: Dos reportes de herramental
+        $this->postJson('/api/reportes', [
+            'employee_number' => $this->lider->employee_number,
+            'maquina_id' => $this->maquina->id,
+            'turno' => 'A',
+            'descripcion_falla' => 'Falla herramental 1',
+            'herramental_id' => $this->herramental->id
+        ])->assertStatus(201);
+
+        $this->postJson('/api/reportes', [
+            'employee_number' => $this->lider->employee_number,
+            'maquina_id' => $this->maquina->id,
+            'turno' => 'A',
+            'descripcion_falla' => 'Falla herramental 2',
+            'herramental_id' => $this->herramental->id
+        ])->assertStatus(422);
+    }
 }
+
