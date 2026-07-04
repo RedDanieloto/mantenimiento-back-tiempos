@@ -3,17 +3,18 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\herramental;
+use App\Models\Herramental;
 use Illuminate\Support\Facades\Validator;
-
 
 class HerramentalController extends Controller
 {
+    // Obtiene todos los herramentales
     public function index()
     {
-        return herramental::all();
+        return Herramental::all();
     }
 
+    // Registra un nuevo herramental
     public function store(Request $request)
     {
         Validator::make($request->all(), [
@@ -27,9 +28,7 @@ class HerramentalController extends Controller
             'linea_id.exists' => 'El ID de la linea no existe.',
         ])->validate();
 
-
-
-        $herramental = herramental::create([
+        $herramental = Herramental::create([
             'name' => $request->name,
             'linea_id' => $request->linea_id,
         ]);
@@ -39,7 +38,9 @@ class HerramentalController extends Controller
             'herramental' => $herramental
         ], 201);
     }
-    public function update(Request $request, herramental $herramental)
+
+    // Actualiza los datos de un herramental
+    public function update(Request $request, Herramental $herramental)
     {
         $data = $request->validate([
             'name' => 'required|string|max:255|unique:herramentals,name,' . $herramental->id,
@@ -61,37 +62,32 @@ class HerramentalController extends Controller
             'herramental' => $herramental
         ], 200);
     }
+
+    // Muestra un herramental especifico
     public function show($id)
     {
-        $herramental = herramental::find($id);
+        $herramental = Herramental::find($id);
         if (!$herramental) {
             return response()->json(['message' => 'Herramental no encontrado.'], 404);
         }
         return response()->json($herramental);
     }
-    public function delete($id)
-    {
-        $herramental = herramental::find($id);
-        if (!$herramental) {
-            return response()->json(['message' => 'Herramental no encontrado.'], 404);
-        }
-        $herramental->delete();
-        return response()->json(['message' => 'Herramental eliminado correctamente.']);
-    }
 
-    public function destroy(herramental $herramental)
+    // Elimina un herramental
+    public function destroy(Herramental $herramental)
     {
         $herramental->delete();
         return response()->json(['message' => 'Herramental eliminado correctamente.'], 200);
     }
 
+    // Obtiene los herramentales de una linea
     public function herramentalesPorLinea($linea_id)
     {
-        $herramentales = herramental::where('linea_id', $linea_id)->get();
+        $herramentales = Herramental::where('linea_id', $linea_id)->get();
         if ($herramentales->isEmpty()) {
             return response()->json(['message' => 'No hay herramentales para esta línea.', 'data' => []], 200);
         }
         return response()->json($herramentales, 200);
     }
-
 }
+

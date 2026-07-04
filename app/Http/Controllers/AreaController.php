@@ -6,21 +6,22 @@ use Illuminate\Http\Request;
 use App\Models\Area;
 use Illuminate\Support\Facades\Validator;
 
-
 class AreaController extends Controller
 {
-    //==================[Index]==========================
+    // Obtiene todas las areas registradas
     public function index()
     {
         $areas = Area::all();
         return response()->json($areas);
     }
-    //==================[Show]==========================
+
+    // Muestra una area especifica
     public function show(Area $area)
     {
         return response()->json($area);
     }
-    //==================[Store]==========================
+
+    // Registra una nueva area
     public function store(Request $request)
     {
         $data = Validator::make($request->all(), [
@@ -36,7 +37,8 @@ class AreaController extends Controller
         $area = Area::create($data);
         return response()->json($area, 201);
     }
-    //==================[Update]==========================
+
+    // Actualiza una area existente
     public function update(Request $request, Area $area)
     {
         $data = Validator::make($request->all(), [
@@ -52,11 +54,11 @@ class AreaController extends Controller
         $area->update($data);
         return response()->json($area);
     }
-    //==================[Delete]==========================
+
+    // Elimina una area
     public function destroy(Area $area)
     {
         $area->delete();
         return response()->json(['message' => 'Área eliminada correctamente.']);
     }
-
 }

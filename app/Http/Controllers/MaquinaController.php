@@ -7,22 +7,22 @@ use App\Models\Maquina;
 use Illuminate\Support\Facades\Validator;
 use App\Models\Linea;
 
-
 class MaquinaController extends Controller
 {
-    //==================[Index]==========================
+    // Obtiene todas las maquinas con sus relaciones de linea y area
     public function index()
     {
         return Maquina::with('linea.area')->get();
-
     }
-    //==================[Show]==========================
+
+    // Muestra una maquina especifica
     public function show(Maquina $maquina)
     {
         $maquina->load('linea.area');
         return response()->json($maquina);
     }
-    //==================[Store]==========================
+
+    // Registra una nueva maquina
     public function store(Request $request)
     {
         $data = $request->validate([
@@ -44,7 +44,8 @@ class MaquinaController extends Controller
             'maquina' => $maquina
         ], 201);
     }
-    //==================[Update]==========================
+
+    // Actualiza los datos de una maquina
     public function update(Request $request, Maquina $maquina)
     {
         $data = $request->validate([
@@ -63,19 +64,22 @@ class MaquinaController extends Controller
         $maquina->update($data);
         return response()->json($maquina);
     }
-    //==================[Delete]==========================
+
+    // Elimina una maquina
     public function destroy(Maquina $maquina)
     {
         $maquina->delete();
         return response()->json(['message' => 'Máquina eliminada correctamente.']);
     }
-    //==================[Show by Linea]==========================
+
+    // Obtiene las maquinas de una linea especifica
     public function maquinasPorLinea($linea_id)
     {
         $maquinas = Maquina::where('linea_id', $linea_id)->get();
         return response()->json($maquinas);
     }
-    //==================[Show by Area]==========================
+
+    // Obtiene las maquinas de un area especifica
     public function maquinasPorArea($area_id)
     {
         $maquinas = Maquina::whereHas('linea', function ($query) use ($area_id) {
@@ -83,34 +87,11 @@ class MaquinaController extends Controller
         })->get();
         return response()->json($maquinas);
     }
-    //==================[Show by Name]==========================
+
+    // Busca maquinas por coincidencia de nombre
     public function buscarPorNombre($name)
     {
         $maquinas = Maquina::where('name', 'like', '%' . $name . '%')->get();
-        return response()->json($maquinas);
-    }
-    //==================[Show by ID]==========================
-    public function buscarPorId($id)
-    {
-        $maquina = Maquina::find($id);
-        if (!$maquina) {
-            return response()->json(['message' => 'Máquina no encontrada.'], 404); 
-        }
-        return response()->json($maquina);
-    }
-    //==================[Show with Linea and Area]==========================
-    public function showWithRelations($id)
-    {
-        $maquina = Maquina::with('linea.area')->find($id);
-        if (!$maquina) {
-            return response()->json(['message' => 'Máquina no encontrada.'], 404);
-        }
-        return response()->json($maquina);
-    }
-    //==================[List with Linea and Area]==========================
-    public function listWithRelations()
-    {
-        $maquinas = Maquina::with('linea.area')->get();
         return response()->json($maquinas);
     }
 }

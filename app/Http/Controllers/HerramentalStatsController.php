@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Reporte;
 use App\Models\Maquina;
-use App\Models\herramental;
+use App\Models\Herramental;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;

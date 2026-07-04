@@ -8,7 +8,7 @@ use App\Models\User;
 use App\Models\Area;
 use App\Models\Linea;
 use App\Models\Maquina;
-use App\Models\herramental;
+use App\Models\Herramental;
 use Carbon\Carbon;
 
 class CreateTestReportes extends Command
@@ -22,9 +22,9 @@ class CreateTestReportes extends Command
         $area = Area::where('name', 'Producción')->first();
         $linea = Linea::where('name', 'Línea A')->first();
         $maquina = Maquina::where('name', 'Torno CNC-01')->first();
-        $h1 = herramental::where('name', 'Llave Inglesa')->first();
-        $h2 = herramental::where('name', 'Destornillador')->first();
-        $h3 = herramental::where('name', 'Martillo')->first();
+        $h1 = Herramental::where('name', 'Llave Inglesa')->first();
+        $h2 = Herramental::where('name', 'Destornillador')->first();
+        $h3 = Herramental::where('name', 'Martillo')->first();
 
         if (!$user || !$area || !$linea || !$maquina || !$h1 || !$h2 || !$h3) {
             $this->error('Faltan datos base');

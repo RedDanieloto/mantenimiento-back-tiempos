@@ -6,15 +6,15 @@ use Illuminate\Http\Request;
 use App\Models\Linea;
 use Illuminate\Support\Facades\Validator;
 
-
 class LineaController extends Controller
 {
-    //==================[Index]==========================
+    // Obtiene todas las lineas de produccion
     public function index()
     {
         return Linea::all();
     }
-    //==================[Show]==========================
+
+    // Muestra una linea especifica
     public function show($id)
     {
         $linea = Linea::find($id);
@@ -23,7 +23,8 @@ class LineaController extends Controller
         }
         return response()->json($linea);
     }
-    //==================[Store]==========================
+
+    // Registra una nueva linea de produccion
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -51,7 +52,8 @@ class LineaController extends Controller
             'linea' => $linea
         ], 201);
     }
-    //==================[Update]==========================|
+
+    // Actualiza los datos de una linea
     public function update(Request $request, Linea $linea)
     {
         $data = $request->validate([
@@ -70,17 +72,18 @@ class LineaController extends Controller
         $linea->update($data);
         return response()->json($linea);
     }
-    //==================[Delete]==========================
+
+    // Elimina una linea
     public function destroy(Linea $linea)
     {
         $linea->delete();
         return response()->json(['message' => 'Línea eliminada correctamente.']);       
     }
-    //==================[Show by Area]==========================
+
+    // Obtiene las lineas de un area especifica
     public function lineasPorArea($area_id)
     {
         $lineas = Linea::where('area_id', $area_id)->get();
         return response()->json($lineas);
     }
-
 }

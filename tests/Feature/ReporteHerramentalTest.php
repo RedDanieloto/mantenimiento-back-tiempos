@@ -8,7 +8,7 @@ use App\Models\Area;
 use App\Models\Linea;
 use App\Models\Maquina;
 use App\Models\Reporte;
-use App\Models\herramental;
+use App\Models\Herramental;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class ReporteHerramentalTest extends TestCase
@@ -40,7 +40,7 @@ class ReporteHerramentalTest extends TestCase
             'password' => bcrypt('password')
         ]);
         
-        $this->herramental = herramental::create([
+        $this->herramental = Herramental::create([
             'name' => 'Llave Inglesa Test',
             'linea_id' => $this->linea->id
         ]);

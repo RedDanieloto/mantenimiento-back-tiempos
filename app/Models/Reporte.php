@@ -36,49 +36,44 @@ class Reporte extends Model
         'fin' => 'datetime',
     ];
 
-    // ✅ OPTIMIZACIÓN: Solo campos computados puros (sin queries DB)
-    // lider_nombre y tecnico_nombre son columnas DB denormalizadas
+    // Campos computados cargados automaticamente
     protected $appends = [
         'tiempo_reaccion_segundos',
         'tiempo_mantenimiento_segundos',
         'tiempo_total_segundos',
     ];
 
-    //Un reporte pertenece a un usuario
+    // Relacion con el usuario creador del reporte
     public function user()
     {
-        // Foreign key on reportes is 'employee_number' referencing users.employee_number
         return $this->belongsTo(User::class, 'employee_number', 'employee_number');
     }
 
-    //Un reporte pertenece a una maquina
+    // Relacion con la maquina del reporte
     public function maquina()
     {
         return $this->belongsTo(Maquina::class);
     }
 
-    //Un reporte pertenece a un area
+    // Relacion con el area del reporte
     public function area()
     {
         return $this->belongsTo(Area::class);
     }
 
-    // Un reporte tiene un técnico asignado (opcional)
+    // Relacion con el tecnico asignado
     public function tecnico()
     {
         return $this->belongsTo(User::class, 'tecnico_employee_number', 'employee_number');
     }
 
-    // Un reporte puede tener un herramental asociado (opcional, solo si falla es de herramental)
+    // Relacion con el herramental asociado
     public function herramental()
     {
-        return $this->belongsTo(herramental::class);
+        return $this->belongsTo(Herramental::class);
     }
 
-    // ✅ OPTIMIZACIÓN: lider_nombre y tecnico_nombre son columnas DB
-    // Eliminados accessors N+1 (ahorramos 2 queries × N reportes)
-
-    // Tiempos calculados en segundos (pure math, sin queries DB)
+    // Obtiene el tiempo de reaccion en segundos
     public function getTiempoReaccionSegundosAttribute(): ?int
     {
         if (!$this->inicio) return null;
@@ -86,6 +81,7 @@ class Reporte extends Model
         return (int) abs($this->inicio->diffInSeconds($to));
     }
 
+    // Obtiene el tiempo de mantenimiento en segundos
     public function getTiempoMantenimientoSegundosAttribute(): ?int
     {
         if (!$this->aceptado_en) return null;
@@ -93,6 +89,7 @@ class Reporte extends Model
         return (int) abs($this->aceptado_en->diffInSeconds($to));
     }
 
+    // Obtiene el tiempo total de paro en segundos
     public function getTiempoTotalSegundosAttribute(): ?int
     {
         if (!$this->inicio) return null;

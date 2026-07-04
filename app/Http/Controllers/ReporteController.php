@@ -18,7 +18,8 @@ class ReporteController extends Controller
 {
     private string $tz = 'America/Mexico_City';
 
-        private function normalizeStatus(?string $s): ?string
+    // Normaliza el estado a un formato estandarizado
+    private function normalizeStatus(?string $s): ?string
     {
         if ($s === null) return null;
         $s = strtolower(trim($s));
@@ -30,6 +31,8 @@ class ReporteController extends Controller
             default                      => $s,
         };
     }
+
+    // Retorna un listado paginado de reportes con filtros y ordenacion
     public function index(Request $request)
     {
         $q = Reporte::select([
@@ -175,7 +178,8 @@ class ReporteController extends Controller
         return response()->json($p);
     }
 
-        private function presentReporte(Reporte $r): array
+    // Formatea un reporte con sus relaciones de forma estandar
+    private function presentReporte(Reporte $r): array
     {
         $r->loadMissing(['herramental', 'maquina.linea.area']);
         $data = $r->toArray();
@@ -193,7 +197,8 @@ class ReporteController extends Controller
         return $data;
     }
 
-        private function presentReportePretty(Reporte $r): array
+    // Formatea un reporte con estructura anidada para el frontend
+    private function presentReportePretty(Reporte $r): array
     {
         $r->loadMissing(['user', 'tecnico', 'herramental', 'maquina.linea.area']);
         $maquina = $r->maquina;
@@ -262,11 +267,14 @@ class ReporteController extends Controller
         ];
     }
 
+    // Determina el formato de presentacion del reporte solicitado
     private function presentReporteOut(Request $request, Reporte $r): array
     {
         $pretty = $request->boolean('pretty') || strtolower((string)$request->string('view')) === 'pretty';
         return $pretty ? $this->presentReportePretty($r) : $this->presentReporte($r);
     }
+
+    // Busca informacion relacionada de maquina, linea o usuarios
     public function lookup(Request $request)
     {
         $out = [];
@@ -301,6 +309,7 @@ class ReporteController extends Controller
 
         return response()->json($out);
     }
+    // Crea un nuevo reporte si no hay uno activo recientemente
     public function store(Request $request)
     {
         $data = Validator::make($request->all(), [
@@ -332,16 +341,14 @@ class ReporteController extends Controller
             return response()->json(['message' => 'Ya existe un reporte activo para esta máquina en los últimos 15 minutos.'], 422);
         }
 
-
-    $user    = $creator; 
         $maquina = Maquina::with('linea.area')->findOrFail($data['maquina_id']);
         $areaId  = optional(optional($maquina->linea)->area)->id;
 
         $reporte = null;
-        DB::transaction(function () use (&$reporte, $data, $user, $maquina, $areaId) {
+        DB::transaction(function () use (&$reporte, $data, $creator, $maquina, $areaId) {
             $reporte = Reporte::create([
-                'employee_number'         => $user->employee_number,
-                'lider_nombre'            => $user->name,
+                'employee_number'         => $creator->employee_number,
+                'lider_nombre'            => $creator->name,
                 'area_id'                 => $areaId,
                 'maquina_id'              => $maquina->id,
                 'status'                  => 'abierto',
@@ -367,6 +374,8 @@ class ReporteController extends Controller
         }
         return response()->json($this->presentReporteOut($request, $reporte), 201);
     }
+
+    // Registra la aceptacion de un reporte por parte de un tecnico
     public function accept(Request $request, Reporte $reporte)
     {
         $data = Validator::make($request->all(), [
@@ -405,6 +414,8 @@ class ReporteController extends Controller
         $reporteService->clearCacheForArea($reporte->area_id);
         return response()->json($this->presentReporteOut($request, $fresh));
     }
+
+    // Cierra el reporte registrando refacciones, scrap y comentarios
     public function finish(Request $request, Reporte $reporte)
     {
         $data = Validator::make($request->all(), [
@@ -432,6 +443,8 @@ class ReporteController extends Controller
         $reporteService->clearCacheForArea($reporte->area_id);
         return response()->json($this->presentReporteOut($request, $fresh));
     }
+
+    // Genera y descarga el archivo Excel con el historial global
     public function exportarexcel(Request $request)
     {
         $filename = 'historial_reportes_' . now()->format('Ymd_His') . '.xlsx';
@@ -442,6 +455,8 @@ class ReporteController extends Controller
                 'X-Content-Type-Options' => 'nosniff',
             ]);
     }
+
+    // Retorna los reportes de un area especifica con paginacion
     public function indexByArea(Request $request, Area $area)
     {
         $day = $request->query('day');
@@ -476,6 +491,8 @@ class ReporteController extends Controller
         
         return response()->json($reportes);
     }
+
+    // Retorna todos los reportes pendientes de cierre
     public function pendientesTotales(Request $request)
     {
         $page = $request->query('page', 1);
@@ -519,6 +536,8 @@ class ReporteController extends Controller
         
         return response()->json($reportes);
     }
+
+    // Retorna los reportes pendientes correspondientes a un area
     public function pendientesByArea(Request $request, Area $area)
     {
         $page = $request->query('page', 1);
@@ -563,6 +582,8 @@ class ReporteController extends Controller
         
         return response()->json($reportes);
     }
+
+    // Crea un reporte validando que la maquina pertenezca al area
     public function storeByArea(Request $request, Area $area)
     {
         $data = Validator::make($request->all(), [
@@ -578,17 +599,21 @@ class ReporteController extends Controller
         }
         return $this->store($request);
     }
+
+    // Genera y descarga el archivo Excel de reportes para un area
     public function exportByArea(Request $request, Area $area)
     {
         $request->merge(['area_id' => (string) $area->id]);
         $filename = 'historial_reportes_area_'.$area->id.'.xlsx';
-
+ 
         return (new \App\Exports\ReportesExport($request))
             ->download($filename, \Maatwebsite\Excel\Excel::XLSX, [
                 'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                 'X-Content-Type-Options' => 'nosniff',
             ]);
     }
+
+    // Muestra la vista de confirmacion para la descarga del Excel
     public function descargaIniciada(Request $request, Area $area)
     {
         $downloadUrl = route('reportes.exportByArea', ['area' => $area->id]);

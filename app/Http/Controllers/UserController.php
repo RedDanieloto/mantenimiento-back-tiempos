@@ -8,12 +8,13 @@ use Illuminate\Support\Facades\Validator;
 
 class UserController extends Controller
 {
-    //============[Listar]============//
+    // Obtiene todos los usuarios
     public function index()
     {
         return User::all();
     }
-    //============[Crear]============//
+
+    // Registra un nuevo usuario
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -48,7 +49,8 @@ class UserController extends Controller
             'usuario' => $user
         ], 201);
     }
-    //============[Mostrar]============//
+
+    // Muestra un usuario especifico
     public function show($id)
     {
         $user = User::find($id);
@@ -57,7 +59,8 @@ class UserController extends Controller
         }
         return response()->json($user);
     }
-    //============[Actualizar]============//
+
+    // Actualiza los datos de un usuario
     public function update(Request $request, $id)
     {
         $user = User::find($id);
@@ -89,7 +92,8 @@ class UserController extends Controller
             'usuario' => $user
         ]);
     }
-    //============[Eliminar]============//
+
+    // Elimina un usuario
     public function destroy($id)
     {
         $user = User::find($id);
