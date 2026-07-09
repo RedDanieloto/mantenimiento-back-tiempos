@@ -327,5 +327,87 @@ class ReporteHerramentalTest extends TestCase
             'herramental_id' => $this->herramental->id
         ])->assertStatus(422);
     }
+
+    /** @test */
+    public function no_permite_crear_reporte_si_la_maquina_esta_bloqueada_por_otro_proceso()
+    {
+        $lockKey = 'create_report_machine_' . $this->maquina->id;
+        $lock = \Illuminate\Support\Facades\Cache::lock($lockKey, 5);
+        $lock->get();
+
+        $response = $this->postJson('/api/reportes', [
+            'employee_number' => $this->lider->employee_number,
+            'maquina_id' => $this->maquina->id,
+            'turno' => 'A',
+            'descripcion_falla' => 'Falla concurrente'
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJson([
+                'message' => 'Se está procesando otro reporte para esta máquina en este momento.'
+            ]);
+
+        $lock->release();
+    }
+
+    /** @test */
+    public function no_permite_finalizar_reporte_con_departamento_invalido()
+    {
+        $reporte = Reporte::create([
+            'employee_number' => $this->lider->employee_number,
+            'area_id' => $this->area->id,
+            'maquina_id' => $this->maquina->id,
+            'status' => 'en_mantenimiento',
+            'falla' => 'Falla',
+            'turno' => 'A',
+            'descripcion_falla' => 'Falla general',
+            'inicio' => now(),
+            'tecnico_employee_number' => $this->tecnico->employee_number,
+            'tecnico_nombre' => $this->tecnico->name,
+            'aceptado_en' => now()
+        ]);
+
+        // Intentar finalizar con "-"
+        $response = $this->postJson("/api/reportes/{$reporte->id}/finalizar", [
+            'descripcion_resultado' => 'Se reparó',
+            'refaccion_utilizada' => 'N/A',
+            'departamento' => '-'
+        ]);
+
+        $response->assertStatus(422);
+
+        // Intentar finalizar con "n/a"
+        $response2 = $this->postJson("/api/reportes/{$reporte->id}/finalizar", [
+            'descripcion_resultado' => 'Se reparó',
+            'refaccion_utilizada' => 'N/A',
+            'departamento' => 'n/a'
+        ]);
+
+        $response2->assertStatus(422);
+    }
+
+    /** @test */
+    public function no_permite_actualizar_reporte_a_ok_sin_departamento_valido_en_gestion()
+    {
+        $reporte = Reporte::create([
+            'employee_number' => $this->lider->employee_number,
+            'area_id' => $this->area->id,
+            'maquina_id' => $this->maquina->id,
+            'status' => 'abierto',
+            'falla' => 'Falla',
+            'turno' => 'A',
+            'descripcion_falla' => 'Falla general',
+            'inicio' => now()
+        ]);
+
+        // Intentar actualizar a OK desde el panel de gestión con departamento "-"
+        $response = $this->put("/reportes/{$reporte->id}", [
+            'inicio' => now()->format('Y-m-d\TH:i'),
+            'status' => 'OK',
+            'departamento' => '-'
+        ]);
+
+        $response->assertSessionHasErrors(['departamento']);
+    }
 }
 

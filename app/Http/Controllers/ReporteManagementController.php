@@ -11,7 +11,8 @@ use Carbon\Carbon;
 
 class ReporteManagementController extends Controller
 {
-        public function index(Request $request)
+    // [Muestra el listado de reportes para administración]
+    public function index(Request $request)
     {
         $query = Reporte::with(['user', 'tecnico', 'maquina.linea.area']);
         if ($request->filled('status')) {
@@ -60,7 +61,8 @@ class ReporteManagementController extends Controller
         return view('reportes.manage', compact('reportes', 'areas'));
     }
 
-        public function edit(Reporte $reporte)
+    // [Muestra el formulario de edición de un reporte]
+    public function edit(Reporte $reporte)
     {
         $reporte->load(['user', 'tecnico', 'maquina.linea.area']);
         $tecnicos = User::where('role', 'tecnico')->get();
@@ -68,7 +70,8 @@ class ReporteManagementController extends Controller
         return view('reportes.edit', compact('reporte', 'tecnicos'));
     }
 
-        public function update(Request $request, Reporte $reporte)
+    // [Actualiza los datos del reporte con cálculos de tiempos]
+    public function update(Request $request, Reporte $reporte)
     {
         try {
             \Log::info('Update request received', ['data' => $request->all()]);
@@ -84,7 +87,19 @@ class ReporteManagementController extends Controller
                 'descripcion_falla' => 'nullable|string',
                 'descripcion_resultado' => 'nullable|string',
                 'refaccion_utilizada' => 'nullable|string',
-                'departamento' => 'nullable|string',
+                'departamento' => [
+                    'nullable',
+                    'string',
+                    function ($attribute, $value, $fail) use ($request) {
+                        $status = $request->input('status');
+                        $trimmed = trim((string)$value);
+                        if ($status === 'OK') {
+                            if (empty($trimmed) || $trimmed === '-' || $trimmed === '—' || $trimmed === '--' || !preg_match('/[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ]/', $trimmed) || in_array(strtolower($trimmed), ['n/a', 'na', 'none', 'null', 'sin departamento'])) {
+                                $fail('El departamento es obligatorio y debe ser válido cuando el reporte está cerrado (OK).');
+                            }
+                        }
+                    }
+                ],
             ]);
 
             \Log::info('Validated data', ['validated' => $validated]);
@@ -122,7 +137,6 @@ class ReporteManagementController extends Controller
                 'departamento' => $validated['departamento'],
             ];
 
-            // Si pasa de no aceptado a aceptado, habilita alerta de 20 min en mantenimiento.
             if (!$wasAccepted && $aceptado && Schema::hasColumn('reportes', 'alerta_1h_enviada')) {
                 $updateData['alerta_1h_enviada'] = false;
             }
@@ -133,18 +147,22 @@ class ReporteManagementController extends Controller
 
             return redirect()->route('reportes.manage.index')
                            ->with('success', 'Reporte actualizado correctamente');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
         } catch (\Exception $e) {
             \Log::error('Error updating reporte', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
             return back()->with('error', 'Error al actualizar: ' . $e->getMessage());
         }
     }
 
-        public function confirmDelete(Reporte $reporte)
+    // [Muestra la vista de confirmación de eliminación]
+    public function confirmDelete(Reporte $reporte)
     {
         return view('reportes.confirm-delete', compact('reporte'));
     }
 
-        public function destroy(Reporte $reporte)
+    // [Elimina un reporte de la base de datos]
+    public function destroy(Reporte $reporte)
     {
         $reporte->delete();
         
@@ -152,7 +170,8 @@ class ReporteManagementController extends Controller
                        ->with('success', 'Reporte eliminado correctamente');
     }
 
-        public function destroyMultiple(Request $request)
+    // [Elimina múltiples reportes seleccionados]
+    public function destroyMultiple(Request $request)
     {
         try {
             \Log::info('Destroy multiple request received', ['data' => $request->all()]);

@@ -12,13 +12,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Cache;
 
 
 class ReporteController extends Controller
 {
     private string $tz = 'America/Mexico_City';
 
-    // Normaliza el estado a un formato estandarizado
+    // [Normaliza el estado a un formato estandarizado]
     private function normalizeStatus(?string $s): ?string
     {
         if ($s === null) return null;
@@ -32,7 +33,7 @@ class ReporteController extends Controller
         };
     }
 
-    // Retorna un listado paginado de reportes con filtros y ordenacion
+    // [Retorna un listado paginado de reportes con filtros y ordenacion]
     public function index(Request $request)
     {
         $q = Reporte::select([
@@ -178,7 +179,7 @@ class ReporteController extends Controller
         return response()->json($p);
     }
 
-    // Formatea un reporte con sus relaciones de forma estandar
+    // [Formatea un reporte con sus relaciones de forma estandar]
     private function presentReporte(Reporte $r): array
     {
         $r->loadMissing(['herramental', 'maquina.linea.area']);
@@ -197,7 +198,7 @@ class ReporteController extends Controller
         return $data;
     }
 
-    // Formatea un reporte con estructura anidada para el frontend
+    // [Formatea un reporte con estructura anidada para el frontend]
     private function presentReportePretty(Reporte $r): array
     {
         $r->loadMissing(['user', 'tecnico', 'herramental', 'maquina.linea.area']);
@@ -267,14 +268,14 @@ class ReporteController extends Controller
         ];
     }
 
-    // Determina el formato de presentacion del reporte solicitado
+    // [Determina el formato de presentacion del reporte solicitado]
     private function presentReporteOut(Request $request, Reporte $r): array
     {
         $pretty = $request->boolean('pretty') || strtolower((string)$request->string('view')) === 'pretty';
         return $pretty ? $this->presentReportePretty($r) : $this->presentReporte($r);
     }
 
-    // Busca informacion relacionada de maquina, linea o usuarios
+    // [Busca informacion relacionada de maquina, linea o usuarios]
     public function lookup(Request $request)
     {
         $out = [];
@@ -309,7 +310,7 @@ class ReporteController extends Controller
 
         return response()->json($out);
     }
-    // Crea un nuevo reporte si no hay uno activo recientemente
+    // [Crea un nuevo reporte si no hay uno activo recientemente]
     public function store(Request $request)
     {
         $data = Validator::make($request->all(), [
@@ -326,46 +327,57 @@ class ReporteController extends Controller
         $now = now();
         $isHerramental = isset($data['herramental_id']) && $data['herramental_id'] !== null;
 
-        $reporteActivo = Reporte::where('maquina_id', $data['maquina_id'])
-            ->where('inicio', '>=', (clone $now)->subMinutes(15))
-            ->whereIn('status', ['abierto', 'en_mantenimiento'])
-            ->where(function ($query) use ($isHerramental) {
-                if ($isHerramental) {
-                    $query->whereNotNull('herramental_id');
-                } else {
-                    $query->whereNull('herramental_id');
-                }
-            })
-            ->exists();
-        if ($reporteActivo) {
-            return response()->json(['message' => 'Ya existe un reporte activo para esta máquina en los últimos 15 minutos.'], 422);
+        $lockKey = 'create_report_machine_' . $data['maquina_id'] . ($isHerramental ? '_herr_' . $data['herramental_id'] : '');
+        $lock = Cache::lock($lockKey, 5);
+
+        if (!$lock->get()) {
+            return response()->json(['message' => 'Se está procesando otro reporte para esta máquina en este momento.'], 422);
         }
 
-        $maquina = Maquina::with('linea.area')->findOrFail($data['maquina_id']);
-        $areaId  = optional(optional($maquina->linea)->area)->id;
+        try {
+            $reporteActivo = Reporte::where('maquina_id', $data['maquina_id'])
+                ->where('inicio', '>=', (clone $now)->subMinutes(15))
+                ->whereIn('status', ['abierto', 'en_mantenimiento'])
+                ->where(function ($query) use ($isHerramental) {
+                    if ($isHerramental) {
+                        $query->whereNotNull('herramental_id');
+                    } else {
+                        $query->whereNull('herramental_id');
+                    }
+                })
+                ->exists();
+            if ($reporteActivo) {
+                return response()->json(['message' => 'Ya existe un reporte activo para esta máquina en los últimos 15 minutos.'], 422);
+            }
 
-        $reporte = null;
-        DB::transaction(function () use (&$reporte, $data, $creator, $maquina, $areaId) {
-            $reporte = Reporte::create([
-                'employee_number'         => $creator->employee_number,
-                'lider_nombre'            => $creator->name,
-                'area_id'                 => $areaId,
-                'maquina_id'              => $maquina->id,
-                'status'                  => 'abierto',
-                'falla'                   => 'por definir',
-                'departamento'            => null,
-                'turno'                   => $data['turno'],
-                'descripcion_falla'       => $data['descripcion_falla'],
-                'herramental_id'          => $data['herramental_id'] ?? null,
-                'descripcion_resultado'   => '',
-                'refaccion_utilizada'     => null,
-                'inicio'                  => now(),
-                'fin'                     => null,
-                'aceptado_en'             => null,
-                'tecnico_employee_number' => null,
-                'tecnico_nombre'          => null,
-            ]);
-        });
+            $maquina = Maquina::with('linea.area')->findOrFail($data['maquina_id']);
+            $areaId  = optional(optional($maquina->linea)->area)->id;
+
+            $reporte = null;
+            DB::transaction(function () use (&$reporte, $data, $creator, $maquina, $areaId) {
+                $reporte = Reporte::create([
+                    'employee_number'         => $creator->employee_number,
+                    'lider_nombre'            => $creator->name,
+                    'area_id'                 => $areaId,
+                    'maquina_id'              => $maquina->id,
+                    'status'                  => 'abierto',
+                    'falla'                   => 'por definir',
+                    'departamento'            => null,
+                    'turno'                   => $data['turno'],
+                    'descripcion_falla'       => $data['descripcion_falla'],
+                    'herramental_id'          => $data['herramental_id'] ?? null,
+                    'descripcion_resultado'   => '',
+                    'refaccion_utilizada'     => null,
+                    'inicio'                  => now(),
+                    'fin'                     => null,
+                    'aceptado_en'             => null,
+                    'tecnico_employee_number' => null,
+                    'tecnico_nombre'          => null,
+                ]);
+            });
+        } finally {
+            $lock->release();
+        }
 
         $reporte->load(['user','tecnico','herramental','maquina.linea.area']);
         $reporteService = new \App\Services\ReporteService();
@@ -375,7 +387,7 @@ class ReporteController extends Controller
         return response()->json($this->presentReporteOut($request, $reporte), 201);
     }
 
-    // Registra la aceptacion de un reporte por parte de un tecnico
+    // [Registra la aceptacion de un reporte por parte de un tecnico]
     public function accept(Request $request, Reporte $reporte)
     {
         $data = Validator::make($request->all(), [
@@ -400,10 +412,7 @@ class ReporteController extends Controller
             'status'                  => 'en_mantenimiento',
         ];
 
-        // Compatibilidad: evita error SQL si en producción aún no existe la columna.
         if (Schema::hasColumn('reportes', 'alerta_1h_enviada')) {
-            // Permite alertar también los 20 min de mantenimiento,
-            // incluso si ya se alertó durante los 20 min de reacción.
             $updateData['alerta_1h_enviada'] = false;
         }
 
@@ -415,13 +424,22 @@ class ReporteController extends Controller
         return response()->json($this->presentReporteOut($request, $fresh));
     }
 
-    // Cierra el reporte registrando refacciones, scrap y comentarios
+    // [Cierra el reporte registrando refacciones, scrap y comentarios]
     public function finish(Request $request, Reporte $reporte)
     {
         $data = Validator::make($request->all(), [
             'descripcion_resultado' => 'required|string',
             'refaccion_utilizada'   => 'nullable|string',
-            'departamento'          => 'required|string',
+            'departamento'          => [
+                'required',
+                'string',
+                function ($attribute, $value, $fail) {
+                    $trimmed = trim((string)$value);
+                    if ($trimmed === '-' || $trimmed === '—' || $trimmed === '--' || !preg_match('/[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ]/', $trimmed) || in_array(strtolower($trimmed), ['n/a', 'na', 'none', 'null', 'sin departamento'])) {
+                        $fail('El departamento especificado no es válido.');
+                    }
+                }
+            ],
             'scrap'                 => 'nullable|integer|min:0',
         ])->validate();
 
@@ -444,7 +462,7 @@ class ReporteController extends Controller
         return response()->json($this->presentReporteOut($request, $fresh));
     }
 
-    // Genera y descarga el archivo Excel con el historial global
+    // [Genera y descarga el archivo Excel con el historial global]
     public function exportarexcel(Request $request)
     {
         $filename = 'historial_reportes_' . now()->format('Ymd_His') . '.xlsx';
@@ -456,7 +474,7 @@ class ReporteController extends Controller
             ]);
     }
 
-    // Retorna los reportes de un area especifica con paginacion
+    // [Retorna los reportes de un area especifica con paginacion]
     public function indexByArea(Request $request, Area $area)
     {
         $day = $request->query('day');
@@ -492,7 +510,7 @@ class ReporteController extends Controller
         return response()->json($reportes);
     }
 
-    // Retorna todos los reportes pendientes de cierre
+    // [Retorna todos los reportes pendientes de cierre]
     public function pendientesTotales(Request $request)
     {
         $page = $request->query('page', 1);
@@ -537,7 +555,7 @@ class ReporteController extends Controller
         return response()->json($reportes);
     }
 
-    // Retorna los reportes pendientes correspondientes a un area
+    // [Retorna los reportes de un area especifica pendientes de cierre]
     public function pendientesByArea(Request $request, Area $area)
     {
         $page = $request->query('page', 1);
@@ -583,7 +601,7 @@ class ReporteController extends Controller
         return response()->json($reportes);
     }
 
-    // Crea un reporte validando que la maquina pertenezca al area
+    // [Crea un reporte validando que la maquina pertenezca al area]
     public function storeByArea(Request $request, Area $area)
     {
         $data = Validator::make($request->all(), [
@@ -600,7 +618,7 @@ class ReporteController extends Controller
         return $this->store($request);
     }
 
-    // Genera y descarga el archivo Excel de reportes para un area
+    // [Genera y descarga el archivo Excel de reportes para un area]
     public function exportByArea(Request $request, Area $area)
     {
         $request->merge(['area_id' => (string) $area->id]);
