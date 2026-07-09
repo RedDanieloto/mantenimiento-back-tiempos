@@ -8,20 +8,20 @@ use Illuminate\Support\Facades\Validator;
 
 class AreaController extends Controller
 {
-    // Obtiene todas las areas registradas
+    // [Obtiene todas las areas registradas]
     public function index()
     {
         $areas = Area::all();
         return response()->json($areas);
     }
 
-    // Muestra una area especifica
+    // [Muestra una area especifica]
     public function show(Area $area)
     {
         return response()->json($area);
     }
 
-    // Registra una nueva area
+    // [Registra una nueva area]
     public function store(Request $request)
     {
         $data = Validator::make($request->all(), [
@@ -38,7 +38,7 @@ class AreaController extends Controller
         return response()->json($area, 201);
     }
 
-    // Actualiza una area existente
+    // [Actualiza una area existente]
     public function update(Request $request, Area $area)
     {
         $data = Validator::make($request->all(), [
@@ -55,7 +55,7 @@ class AreaController extends Controller
         return response()->json($area);
     }
 
-    // Elimina una area
+    // [Elimina una area]
     public function destroy(Area $area)
     {
         $area->delete();

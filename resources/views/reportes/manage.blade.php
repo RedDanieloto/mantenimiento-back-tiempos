@@ -369,6 +369,18 @@
             transform: none;
         }
 
+        .pagination .pagination-dots {
+            border: none;
+            background: transparent;
+            color: #6c757d;
+            cursor: default;
+        }
+
+        .pagination .pagination-dots:hover {
+            background: transparent;
+            transform: none;
+        }
+
         .alert {
             padding: 15px 20px;
             border-radius: 6px;
@@ -422,7 +434,7 @@
 </head>
 <body>
     <div class="container">
-        <!-- Header -->
+        <!-- [Header] -->
         <div class="header">
             <div>
                 <h1>📋 Gestión de Reportes</h1>
@@ -433,7 +445,7 @@
             </div>
         </div>
 
-        <!-- Alerts -->
+        <!-- [Alerts] -->
         @if (session('success'))
             <div style="padding: 20px; padding-top: 25px;">
                 <div class="alert alert-success">
@@ -450,7 +462,7 @@
             </div>
         @endif
 
-        <!-- Filters -->
+        <!-- [Seccion de filtros] -->
         <div class="filters">
             <div class="filter-title">Filtros de Búsqueda</div>
             <form method="GET" action="{{ route('reportes.manage.index') }}" style="display: contents;">
@@ -508,7 +520,7 @@
             </form>
         </div>
 
-        <!-- Bulk Actions -->
+        <!-- [Menu de acciones masivas] -->
         <div style="padding: 0 25px; padding-top: 20px;">
             <div class="bulk-actions" id="bulkActions">
                 <span class="bulk-count">✓ <span id="selectedCount">0</span> reportes seleccionados</span>
@@ -522,14 +534,14 @@
             </div>
         </div>
 
-        <!-- Time Format Toggle -->
+        <!-- [Alternar formato de tiempo] -->
         <div class="time-format-toggle">
             <span class="toggle-label">Mostrar Duración:</span>
             <button type="button" class="toggle-btn active" onclick="toggleTimeFormat('horas')">📊 Horas</button>
             <button type="button" class="toggle-btn" onclick="toggleTimeFormat('minutos')">⏱️ Minutos</button>
         </div>
 
-        <!-- Table -->
+        <!-- [Tabla de reportes] -->
         <div class="content">
             @if ($reportes->count() > 0)
                 <div class="table-wrapper">
@@ -587,25 +599,42 @@
                     </table>
                 </div>
 
-                <!-- Pagination -->
+                <!-- [Paginación] -->
                 <div class="pagination">
-                    {{-- Previous Page Link --}}
                     @if ($reportes->onFirstPage())
                         <span class="disabled">← Anterior</span>
                     @else
                         <a href="{{ $reportes->previousPageUrl() }}">← Anterior</a>
                     @endif
 
-                    {{-- Pagination Elements --}}
-                    @foreach ($reportes->getUrlRange(1, $reportes->lastPage()) as $page => $url)
-                        @if ($page == $reportes->currentPage())
-                            <span class="active">{{ $page }}</span>
-                        @else
-                            <a href="{{ $url }}">{{ $page }}</a>
-                        @endif
-                    @endforeach
+                    @php
+                        $currentPage = $reportes->currentPage();
+                        $lastPage = $reportes->lastPage();
+                        $sideLinks = 2; 
+                    @endphp
 
-                    {{-- Next Page Link --}}
+                    @if($currentPage > $sideLinks + 1)
+                        <a href="{{ $reportes->url(1) }}">1</a>
+                        @if($currentPage > $sideLinks + 2)
+                            <span class="pagination-dots">...</span>
+                        @endif
+                    @endif
+
+                    @for($i = max(1, $currentPage - $sideLinks); $i <= min($lastPage, $currentPage + $sideLinks); $i++)
+                        @if($i == $currentPage)
+                            <span class="active">{{ $i }}</span>
+                        @else
+                            <a href="{{ $reportes->url($i) }}">{{ $i }}</a>
+                        @endif
+                    @endfor
+
+                    @if($currentPage < $lastPage - $sideLinks)
+                        @if($currentPage < $lastPage - $sideLinks - 1)
+                            <span class="pagination-dots">...</span>
+                        @endif
+                        <a href="{{ $reportes->url($lastPage) }}">{{ $lastPage }}</a>
+                    @endif
+
                     @if ($reportes->hasMorePages())
                         <a href="{{ $reportes->nextPageUrl() }}">Siguiente →</a>
                     @else
@@ -613,6 +642,7 @@
                     @endif
                 </div>
             @else
+                <!-- [Estado vacío] -->
                 <div class="empty-state">
                     <div class="empty-state-icon">📭</div>
                     <p style="font-size: 16px; margin-bottom: 10px;">No hay reportes para mostrar</p>
@@ -629,6 +659,7 @@
         const selectedCount = document.getElementById('selectedCount');
         const selectedIds = document.getElementById('selectedIds');
 
+        // [Seleccionar todos los checkboxes] 
         selectAllCheckbox.addEventListener('change', function() {
             reporteCheckboxes.forEach(checkbox => {
                 checkbox.checked = this.checked;
@@ -640,6 +671,7 @@
             checkbox.addEventListener('change', updateBulkActions);
         });
 
+        // [Actualizar acciones masivas] 
         function updateBulkActions() {
             const checkedCount = Array.from(reporteCheckboxes).filter(cb => cb.checked).length;
             selectedCount.textContent = checkedCount;
@@ -657,6 +689,7 @@
             }
         }
 
+        // [Cambiar formato de tiempo] 
         function toggleTimeFormat(format) {
             const buttons = document.querySelectorAll('.time-format-toggle .toggle-btn');
             buttons.forEach(btn => btn.classList.remove('active'));

@@ -54,7 +54,7 @@ class ReporteManagementController extends Controller
             $query->latest('inicio');
         }
 
-        $reportes = $query->paginate(15);
+        $reportes = $query->paginate(15)->withQueryString();
         $areas = Area::all();
 
         return view('reportes.manage', compact('reportes', 'areas'));

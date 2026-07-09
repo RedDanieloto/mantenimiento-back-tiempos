@@ -178,14 +178,14 @@
 </head>
 <body>
     <div class="dialog-container">
-        <!-- Header -->
+        <!-- [Header] -->
         <div class="dialog-header">
             <div class="dialog-icon">⚠️</div>
             <div class="dialog-title">Eliminar Reporte</div>
             <div class="dialog-subtitle">Esta acción no se puede deshacer</div>
         </div>
 
-        <!-- Body -->
+        <!-- [Info de reporte] -->
         <div class="dialog-body">
             <div class="warning-box">
                 ⚠️ Al eliminar este reporte, se perderán todos los datos relacionados.
@@ -235,7 +235,7 @@
             </p>
         </div>
 
-        <!-- Actions -->
+        <!-- [Menu de acciones] -->
         <div class="dialog-actions">
             <a href="{{ route('reportes.manage.index') }}" class="btn btn-cancel">
                 ✕ Cancelar

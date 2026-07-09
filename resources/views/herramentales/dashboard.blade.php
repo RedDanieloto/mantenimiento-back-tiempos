@@ -1,5 +1,5 @@
 @php
-    $m = []; // metrics placeholder
+    $m = [];
 @endphp
 <!DOCTYPE html>
 <html lang="es">
@@ -50,7 +50,6 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* ── Header ── */
         .page-header {
             background: linear-gradient(135deg, #1a365d 0%, #2d5a8c 100%);
             padding: 2.5rem 2rem;
@@ -66,7 +65,6 @@
             letter-spacing: -0.03em;
         }
 
-        /* ── Cards ── */
         .card-custom {
             background: #fff;
             border: 1px solid #e2e8f0;
@@ -80,7 +78,7 @@
             transform: translateY(-2px);
         }
 
-        /* ── Filter Bar ── */
+
         .filter-bar {
             background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
             border: 1px solid #e2e8f0;
@@ -144,7 +142,6 @@
             border-color: #94a3b8;
         }
 
-        /* ── KPI Cards ── */
         .kpi-card {
             background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
             border: 1px solid rgba(226, 232, 240, .8);
@@ -208,7 +205,6 @@
             font-weight: 500;
         }
 
-        /* ── Section headers ── */
         .section-header {
             background: linear-gradient(90deg, #ffffff 0%, #f9fafb 100%);
             border-bottom: 1px solid #e2e8f0;
@@ -260,7 +256,6 @@
             color: var(--danger);
         }
 
-        /* ── Tables ── */
         .table-wrapper { overflow-x: auto; }
         .table-enterprise {
             width: 100%;
@@ -289,7 +284,6 @@
         .table-enterprise tbody tr { transition: background .15s; }
         .table-enterprise tbody tr:hover { background: var(--gray-50); }
 
-        /* ── Pills / Badges ── */
         .pill {
             display: inline-flex; align-items: center;
             padding: 0.3rem 0.7rem;
@@ -312,11 +306,9 @@
             font-weight: 700;
         }
 
-        /* ── Charts ── */
         .chart-body { padding: 1.25rem; }
         canvas { max-height: 300px !important; }
 
-        /* ── Empty State ── */
         .empty-state {
             padding: 3rem 1rem;
             text-align: center;
@@ -324,7 +316,6 @@
         }
         .empty-state i { font-size: 2rem; margin-bottom: 0.5rem; }
 
-        /* ── Responsive ── */
         @media (max-width: 768px) {
             .page-header { padding: 1.25rem 1rem; margin: -1rem -0.75rem 1.5rem; }
             .kpi-value { font-size: 1.5rem; }
@@ -335,7 +326,6 @@
 <body>
 <div class="container-fluid py-4 px-3 px-lg-4">
 
-    <!-- ══ Header ══ -->
     <div class="page-header">
         <div class="d-flex justify-content-between align-items-center">
             <h1 class="mb-0">
@@ -343,8 +333,7 @@
             </h1>
         </div>
     </div>
-
-    <!-- ══ Filter Bar ══ -->
+    <!-- [Seccion de filtros] -->
     <div class="filter-bar mb-4">
         <form id="filterForm" class="row g-3 align-items-end">
             <div class="col-sm-4">
@@ -365,8 +354,7 @@
             </div>
         </form>
     </div>
-
-    <!-- ══ KPIs ══ -->
+    <!-- [Seccion de KPI] -->
     <div class="row g-3 mb-4">
         <div class="col-6 col-lg-3">
             <div class="kpi-card kpi-blue">
@@ -413,7 +401,7 @@
         </div>
     </div>
 
-    <!-- ══ Charts ══ -->
+    <!-- [Seccion de graficas] -->
     <div class="row g-3 mb-4">
         <div class="col-lg-6">
             <div class="card-custom">
@@ -437,7 +425,7 @@
         </div>
     </div>
 
-    <!-- ══ Table: Detalle por Herramental ══ -->
+    <!-- [Tabla Detalle por Herramental] -->
     <div class="card-custom mb-4">
         <div class="section-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <h5 class="section-title"><i class="fas fa-list-ul"></i> Detalle por Herramental</h5>
@@ -497,7 +485,7 @@
         </div>
     </div>
 
-    <!-- ══ Table: Máquinas Afectadas ══ -->
+    <!-- [Tabla de maquinas afectadas] -->
     <div class="card-custom mb-4">
         <div class="section-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <h5 class="section-title"><i class="fas fa-cogs"></i> Máquinas Afectadas</h5>
@@ -555,7 +543,7 @@
         </div>
     </div>
 
-    <!-- ══ Footer ══ -->
+    <!-- [Footer] -->
     <div class="text-center py-3">
         <small style="color:var(--gray-400)">Generado el {{ now()->format('d/m/Y H:i') }} · Sistema de Mantenimiento</small>
     </div>
@@ -572,7 +560,7 @@ document.addEventListener('DOMContentLoaded', function() {
     Chart.defaults.font.size = 12;
     Chart.defaults.color = '#64748b';
 
-    // ── Top 10 Herramentales ──
+    // [Top 10 Herramentales]
     if (top10Data.length > 0) {
         new Chart(document.getElementById('chartTop10'), {
             type: 'bar',
@@ -611,7 +599,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // ── Fallos por Máquina ──
+    // [Fallos por Máquina]
     if (porMaquinaData.length > 0) {
         const colors = ['#2563eb','#0891b2','#7c3aed','#059669','#d97706','#dc2626','#db2777','#4f46e5'];
         new Chart(document.getElementById('chartMaquinas'), {
@@ -643,7 +631,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// ── Filter form ──
+// [Filtro de formularios]
 document.getElementById('filterForm').addEventListener('submit', function(e) {
     e.preventDefault();
     const desde = document.getElementById('desde').value;

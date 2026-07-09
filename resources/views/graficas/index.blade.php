@@ -11,8 +11,6 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
     <style>
         * { transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease; }
-        
-        /* Tema claro por defecto */
         :root {
             --primary: #0052cc;
             --primary-dark: #003d99;
@@ -25,7 +23,6 @@
             --text-light: #9ca3af;
         }
         
-        /* Tema oscuro */
         html[data-theme="dark"] {
             --bg: #0f1419;
             --bg-secondary: #161b22;
@@ -489,14 +486,15 @@
 <body>
 <main class="container">
     <header>
-        <h2>📊 Gráficas y KPIs</h2>
+        <h2><i class="bi bi-speedometer2"></i>Gráficas y KPIs</h2>
         <div class="theme-toggle" onclick="toggleTheme()">
-            <span id="themeIcon">🌙</span>
+            <span id="themeIcon"><i class="bi bi-sun"></i></span>
             <span id="themeLabel">Modo Oscuro</span>
         </div>
     </header>
+    
+    <!-- [Seccion de filtros] -->
         @php
-            // Construye un resumen legible de los filtros activos
             $aplicados = [];
             if (!empty($filters['day'])) {
                 $aplicados[] = 'Día: ' . $filters['day'];
@@ -639,6 +637,7 @@
           </form>
         </details>
     </header>
+    <!-- [Seccion de filtros aplicados] -->
     <div class="filters-summary">
         <span class="label">Mostrando:</span>
         @php $hasAny=false; @endphp
@@ -690,7 +689,8 @@
             <span class="chip chip--muted">Vista general (sin filtros)</span>
         @endif
     </div>
-
+    
+    <!-- [Seccion de tarjetas principales] -->
     <section class="cards">
         <article>
             <h5>MTTR promedio</h5>
@@ -705,7 +705,7 @@
             <div class="kpi">{{ number_format($m['cards']['total_hours'] ?? 0, 2) }} h</div>
         </article>
     </section>
-
+    <!-- [Seccion de graficas principales] -->
     <section class="grid-auto">
         <article class="chart-third">
             <div class="chart-header"><h5>Top 10 líneas por tiempo total (h)</h5><button class="button secondary" onclick="toggleFullscreen('chartTopLineas')">Pantalla completa</button></div>
@@ -755,7 +755,7 @@
 </main>
 
 <script>
-// Sistema de tema oscuro/claro
+// [Script tema obscuro/claro]
 function initTheme() {
     const saved = localStorage.getItem('theme') || 'light';
     document.documentElement.setAttribute('data-theme', saved);
@@ -769,28 +769,22 @@ function toggleTheme() {
     localStorage.setItem('theme', newTheme);
     updateThemeUI(newTheme === 'dark');
     
-    // Actualizar gráficas para aplicar dinámicamente los colores del tema
     if (typeof Chart !== 'undefined' && Chart.instances) {
         Object.values(Chart.instances).forEach(chart => chart.update());
     }
 }
 
 function updateThemeUI(isDark) {
-    const icon = document.getElementById('themeIcon');
     const label = document.getElementById('themeLabel');
     if (isDark) {
-        icon.textContent = '☀️';
         label.textContent = 'Modo Claro';
     } else {
-        icon.textContent = '🌙';
         label.textContent = 'Modo Oscuro';
     }
 }
-
-// Inicializar tema al cargar
 initTheme();
 
-// Sistema de selector de departamentos retractil
+// [Script selector de departamentos]
 function toggleDeptDropdown(e) {
     e.preventDefault();
     const dropdown = document.getElementById('deptDropdown');
@@ -810,7 +804,6 @@ function updateDeptLabel() {
     }
 }
 
-// Cerrar dropdown al hacer click fuera
 document.addEventListener('click', function(e) {
     const deptSelector = document.querySelector('.dept-selector');
     const dropdown = document.getElementById('deptDropdown');
@@ -819,12 +812,11 @@ document.addEventListener('click', function(e) {
     }
 });
 
-// Inicializar label al cargar
 updateDeptLabel();
 
 const M = @json($metrics);
 
-// Registrar el plugin de datalabels y configurar sus opciones globales por defecto
+// [Script plugin de datalabels y configurar sus opciones globales por defecto]
 Chart.register(ChartDataLabels);
 Chart.defaults.plugins.datalabels = {
     color: function(context) {
@@ -848,7 +840,7 @@ Chart.defaults.plugins.datalabels = {
     offset: 4
 };
 
-// Pantalla completa para un artículo contenedor del canvas
+// [Script para pantalla completa]
 function toggleFullscreen(canvasId) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
@@ -875,12 +867,12 @@ function toggleFullscreen(canvasId) {
     }
 }
 
-// Forzar re-cálculo de tamaño de Chart.js al entrar/salir de fullscreen
+// [Script para re-cálculo de tamaño de Chart.js al entrar/salir de fullscreen]
 document.addEventListener('fullscreenchange', () => {
     setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
 });
 
-// Colores mejorados y empresariales para gráficas
+// [Script de colores mejorados gráficas]
 const colors = {
     blue: '#0052cc',
     green: '#10b981',
@@ -891,6 +883,7 @@ const colors = {
     yellow: '#fbbf24'
 };
 
+// [Script para gráficas tipo pastel]
 function pieChart(id, labels, data){
     const ctx = document.getElementById(id);
     const colors = ['#0052cc', '#10b981', '#ef4444', '#f59e0b', '#8b5cf6', '#06b6d4', '#fbbf24', '#ec4899'];
@@ -928,6 +921,7 @@ function pieChart(id, labels, data){
     });
 }
 
+// [Script para gráficas tipo barras]
 function barChart(id, labels, data, label, color){
     const ctx = document.getElementById(id);
     return new Chart(ctx, {
@@ -965,6 +959,7 @@ function barChart(id, labels, data, label, color){
     });
 }
 
+// [Script para gráficas tipo líneas]
 function lineChart(id, labels, series, suggestedMax){
     const ctx = document.getElementById(id);
     return new Chart(ctx, {
@@ -999,7 +994,7 @@ function lineChart(id, labels, series, suggestedMax){
     });
 }
 
-// Crear gráficas con colores mejorados
+// [Crear gráficas con colores mejorados]
 barChart('chartTopLineas', M.top_lineas.labels, M.top_lineas.data, 'Horas', colors.blue);
 barChart('chartTopMaquinas', M.top_maquinas.labels, M.top_maquinas.data, 'Horas', colors.orange);
 barChart('chartTopMaquinasScrap', M.top_maquinas_scrap.labels, M.top_maquinas_scrap.data, 'Scrap', colors.purple);
@@ -1018,6 +1013,7 @@ lineChart('chartSerieMtbf', M.serie_diaria.labels, [
     { label: 'Meta MTBF 10h', data: M.serie_diaria.goal_mtbf, borderColor: colors.green, borderDash: [8,4], pointRadius: 0, tension: 0, fill: false, datalabels: { display: false } },
 ], 12);
 
+// [Gráfica de abiertos por departamento]
 const abiertosLabels = M.abiertos_dia.labels;
 const abiertosData = M.abiertos_dia.data;
 const abiertosGoal = M.abiertos_dia.goal || new Array(abiertosLabels.length).fill(10);
@@ -1071,7 +1067,7 @@ new Chart(ctxAb, {
     }
 });
 
-// Gráfica resumen con estadísticas principales
+// [Gráfica resumen con estadísticas principales]
 const ctxResume = document.getElementById('chartResume');
 new Chart(ctxResume, {
     type: 'doughnut',

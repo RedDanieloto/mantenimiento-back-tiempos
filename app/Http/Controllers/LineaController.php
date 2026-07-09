@@ -8,13 +8,13 @@ use Illuminate\Support\Facades\Validator;
 
 class LineaController extends Controller
 {
-    // Obtiene todas las lineas de produccion
+    // [Obtiene todas las lineas de produccion]
     public function index()
     {
         return Linea::all();
     }
 
-    // Muestra una linea especifica
+    // [Muestra una linea especifica]
     public function show($id)
     {
         $linea = Linea::find($id);
@@ -24,7 +24,7 @@ class LineaController extends Controller
         return response()->json($linea);
     }
 
-    // Registra una nueva linea de produccion
+    // [Registra una nueva linea de produccion]
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -53,7 +53,7 @@ class LineaController extends Controller
         ], 201);
     }
 
-    // Actualiza los datos de una linea
+    // [Actualiza los datos de una linea]
     public function update(Request $request, Linea $linea)
     {
         $data = $request->validate([
@@ -73,7 +73,7 @@ class LineaController extends Controller
         return response()->json($linea);
     }
 
-    // Elimina una linea
+    // [Elimina una linea]
     public function destroy(Linea $linea)
     {
         $linea->delete();

@@ -11,7 +11,8 @@ use Illuminate\Support\Facades\DB;
 
 class HerramentalStatsController extends Controller
 {
-        public function index(Request $request)
+    // [Retorna las estadísticas de herramentales en formato JSON]
+    public function index(Request $request)
     {
         $desde = $request->query('desde') 
             ? Carbon::parse($request->query('desde'))->startOfDay()
@@ -62,7 +63,8 @@ class HerramentalStatsController extends Controller
         ]);
     }
 
-        public function dashboard(Request $request)
+    // [Carga el dashboard de estadísticas de herramentales]
+    public function dashboard(Request $request)
     {
         $desde = $request->query('desde') 
             ? Carbon::parse($request->query('desde'))->startOfDay()
@@ -132,7 +134,8 @@ class HerramentalStatsController extends Controller
         ]);
     }
 
-        private function calcularMTTR($reportes)
+    // [Calcula el tiempo promedio de reparación en minutos]
+    private function calcularMTTR($reportes)
     {
         if ($reportes->isEmpty()) return 0;
 
@@ -146,7 +149,8 @@ class HerramentalStatsController extends Controller
             : $tiemposReparacion->avg();
     }
 
-        private function calcularMTBF($reportes, $desde, $hasta)
+    // [Calcula el tiempo promedio entre fallas en horas]
+    private function calcularMTBF($reportes, $desde, $hasta)
     {
         if ($reportes->count() < 2) return 0;
         $sorted = $reportes->sortBy('inicio')->values();
@@ -161,14 +165,16 @@ class HerramentalStatsController extends Controller
         return (array_sum($tiemposEntreFallos) / count($tiemposEntreFallos)) / 60;
     }
 
-        private function calcularTiempoDowntime($reportes)
+    // [Calcula el tiempo total de paro en minutos]
+    private function calcularTiempoDowntime($reportes)
     {
         return $reportes
             ->filter(fn($r) => $r->inicio && $r->fin)
             ->sum(fn($r) => abs($r->fin->diffInMinutes($r->inicio)));
     }
 
-        private function agruparPorMaquina($reportes)
+    // [Agrupa los reportes de herramentales por máquina]
+    private function agruparPorMaquina($reportes)
     {
         return $reportes
             ->groupBy('maquina_id')
@@ -193,7 +199,8 @@ class HerramentalStatsController extends Controller
             ->values();
     }
 
-        private function top10Herramentales($reportes)
+    // [Retorna los 10 herramentales con más fallas]
+    private function top10Herramentales($reportes)
     {
         return $reportes
             ->groupBy('herramental_id')
@@ -217,7 +224,8 @@ class HerramentalStatsController extends Controller
             ->values();
     }
 
-        private function estadisticasDetalladas($reportes)
+    // [Retorna estadísticas detalladas agrupadas por herramental]
+    private function estadisticasDetalladas($reportes)
     {
         return $reportes
             ->groupBy('herramental_id')

@@ -613,11 +613,4 @@ class ReporteController extends Controller
             ]);
     }
 
-    // Muestra la vista de confirmacion para la descarga del Excel
-    public function descargaIniciada(Request $request, Area $area)
-    {
-        $downloadUrl = route('reportes.exportByArea', ['area' => $area->id]);
-        return view('descarga_iniciada', compact('downloadUrl'));
-    }
-    
 }

@@ -297,31 +297,6 @@
             transform: translateY(-2px);
         }
 
-        .btn-15min {
-            padding: 12px 24px;
-            padding: 15px 30px 15px 30px !important;
-            background: linear-gradient(135deg, #FF6B35 0%, #FF8C42 100%);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            transition: all 0.3s ease;
-        }
-
-        .btn-15min:hover {
-            background: linear-gradient(135deg, #FF5722 0%, #FF6B35 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
-        }
-
-        .btn-15min:active {
-            transform: translateY(0);
-        }
-
         @media (max-width: 768px) {
             .header {
                 flex-direction: column;
@@ -344,13 +319,13 @@
 </head>
 <body>
     <div class="container">
-        <!-- Header -->
+        <!-- [Header] -->
         <div class="header">
             <h1>✏️ Editar Reporte #{{ $reporte->id }}</h1>
             <a href="{{ route('reportes.manage.index') }}" class="btn btn-secondary">← Volver</a>
         </div>
 
-        <!-- Content -->
+        <!-- [Content] -->
         <div class="content">
             @if ($errors->any())
                 <div class="alert alert-danger">
@@ -358,6 +333,7 @@
                 </div>
             @endif
 
+            <!-- [Info de reporte] -->
             <div class="info-box">
                 📌 Máquina: <strong>{{ $reporte->maquina->name ?? 'N/A' }}</strong> | 
                 Área: <strong>{{ optional(optional($reporte->maquina)->linea)->area->name ?? 'N/A' }}</strong> |
@@ -368,7 +344,7 @@
                 @csrf
                 @method('PUT')
 
-                <!-- Sección: Tiempos -->
+                <!-- [Sección: Tiempos] -->
                 <div class="form-section">
                     <div class="section-title">⏱️ Tiempos</div>
                     <div class="form-row">
@@ -414,18 +390,9 @@
                             <div class="help-text">Tiempo desde que llegó el técnico hasta que terminó la reparación</div>
                         </div>
                     </div>
-                    <div style="margin-top: 20px; text-align: center;">
-                                            <button type="submit" class="btn-save">💾 Guardar Cambios</button>
-                        <button type="button" class="btn-15min" onclick="set15Minutes()">⚡ 15 Minutos</button>
-                        <button type="button" class="btn-15min" onclick="set20Minutes()">⚡ 20 Minutos</button>
-                        <button type="button" class="btn-15min" onclick="set25Minutes()">⚡ 25 Minutos</button>
-                        <button type="button" class="btn-15min" onclick="set30Minutes()">⚡ 30 Minutos</button>
-                        <button type="button" class="btn-15min" onclick="set45Minutes()">⚡ 45 Minutos</button>
-                        <button type="button" class="btn-15min" onclick="set60Minutes()">⚡ 60 Minutos</button>
-                    </div>
                 </div>
 
-                <!-- Sección: Estado -->
+                <!-- [Sección: Estado] -->
                 <div class="form-section">
                     <div class="section-title">📊 Estado</div>
                     <div class="form-row">
@@ -459,7 +426,7 @@
                     </div>
                 </div>
 
-                <!-- Sección: Detalles -->
+                <!-- [Sección: Detalles] -->
                 <div class="form-section">
                     <div class="section-title">📝 Detalles</div>
                     <div class="form-group">
@@ -496,7 +463,7 @@
                     </div>
                 </div>
 
-                <!-- Sección: Resumen de Tiempos -->
+                <!-- [Sección: Resumen de Tiempos] -->
                 @if ($reporte->fin)
                     <div class="form-section">
                         <div class="section-title">📈 Resumen de Tiempos</div>
@@ -527,7 +494,7 @@
                     </div>
                 @endif
 
-                <!-- Form Actions -->
+                <!-- [Menu de Acciones] -->
                 <div class="form-actions">
                     <button type="submit" class="btn-save">💾 Guardar Cambios</button>
                     <a href="{{ route('reportes.manage.index') }}" class="btn-cancel">✕ Cancelar</a>
@@ -537,6 +504,7 @@
     </div>
 
     <script>
+        // [Script para alternar formato de tiempos de minutos a horas o viceversa]
         function toggleTimeFormat(format) {
             const buttons = document.querySelectorAll('.toggle-btn');
             buttons.forEach(btn => btn.classList.remove('active'));
@@ -557,31 +525,6 @@
                     el.textContent = (minutos / 60).toFixed(2) + 'h';
                 }
             });
-        }
-
-        function set15Minutes() {
-            document.getElementById('minutos_reaccion').value = 5;
-            document.getElementById('minutos_mantenimiento').value = 10;
-        }
-        function set20Minutes() {
-            document.getElementById('minutos_reaccion').value = 5;
-            document.getElementById('minutos_mantenimiento').value = 15;
-        }
-        function set25Minutes() {
-            document.getElementById('minutos_reaccion').value = 5;
-            document.getElementById('minutos_mantenimiento').value = 20;
-        }
-        function set30Minutes() {
-            document.getElementById('minutos_reaccion').value = 5;
-            document.getElementById('minutos_mantenimiento').value = 25;
-        }
-        function set45Minutes() {
-            document.getElementById('minutos_reaccion').value = 5;
-            document.getElementById('minutos_mantenimiento').value = 40;
-        }
-        function set60Minutes() {
-            document.getElementById('minutos_reaccion').value = 5;
-            document.getElementById('minutos_mantenimiento').value = 55;
         }
     </script>
 </body>

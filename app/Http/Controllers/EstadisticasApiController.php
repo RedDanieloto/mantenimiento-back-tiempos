@@ -13,10 +13,11 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 class EstadisticasApiController extends Controller
 {
+    // [Declarar la zona horaria y el nombre de la aplicacion]
     private string $tz = 'America/Mexico_City';
     private string $appName = 'mantenimiento-tiempos';
 
-    // Obtiene un resumen de los KPIs principales
+    // [Obtiene un resumen de los KPIs principales]
     public function resumen(Request $request): JsonResponse
     {
         [$desde, $hasta] = $this->parsePeriodo($request);
@@ -28,17 +29,14 @@ class EstadisticasApiController extends Controller
         $finalizados = $reportes->where('status', 'OK')->count();
 
         $secToHours = fn($s) => $s === null ? 0 : round($s / 3600, 2);
-
-        // Downtime total (mismo valor que muestra la UI en "Tiempo Total")
         $totalDowntimeSec = $reportes->sum(fn($r) => $r->tiempo_total_segundos ?? 0);
 
-        // MTTR = Tiempo Total / Total Fallas  (igual a como el usuario lo calcula a mano)
+        // MTTR = Tiempo Total / Total Fallas 
         $mttrAvgSec = $reportes->count() > 0 ? $totalDowntimeSec / $reportes->count() : 0;
 
         // MTBF
         $mtbfAvgSec = $this->calcularMTBFGlobal($reportes);
 
-        // Tiempo de reacción promedio
         $reaccionValues = $reportes->filter(fn($r) => $r->aceptado_en)
             ->map(fn($r) => $r->tiempo_reaccion_segundos ?? 0)
             ->filter(fn($s) => $s > 0);
@@ -65,7 +63,7 @@ class EstadisticasApiController extends Controller
         ]);
     }
 
-    // Obtiene el MTTR global del periodo filtrado
+    // [MTTR con filtro]
     public function mttr(Request $request): JsonResponse
     {
         [$desde, $hasta] = $this->parsePeriodo($request);
@@ -89,7 +87,7 @@ class EstadisticasApiController extends Controller
         ]);
     }
 
-    // Obtiene el MTBF global del periodo filtrado
+    // [MTBF con filtro]
     public function mtbf(Request $request): JsonResponse
     {
         [$desde, $hasta] = $this->parsePeriodo($request);
@@ -109,7 +107,7 @@ class EstadisticasApiController extends Controller
         ]);
     }
 
-    // Obtiene el tiempo total de paro del periodo filtrado
+    // [Tiempo total con filtro]
     public function tiempoTotal(Request $request): JsonResponse
     {
         [$desde, $hasta] = $this->parsePeriodo($request);
@@ -133,7 +131,7 @@ class EstadisticasApiController extends Controller
         ]);
     }
 
-    // Obtiene el conteo de reportes abiertos y en mantenimiento
+    // [Reportes abiertos con filtro]
     public function reportesAbiertos(Request $request): JsonResponse
     {
         [$desde, $hasta] = $this->parsePeriodo($request);
@@ -159,7 +157,7 @@ class EstadisticasApiController extends Controller
         ]);
     }
 
-    // Obtiene los datos formateados para las graficas
+    // [Graficas con filtro]
     public function graficas(Request $request): JsonResponse
     {
         [$desde, $hasta] = $this->parsePeriodo($request);
@@ -179,10 +177,10 @@ class EstadisticasApiController extends Controller
         ]);
     }
 
-    // Obtiene tendencias semanales o mensuales para comparativas
+    // [Obtiene tendencias semanales o mensuales]
     public function tendencias(Request $request): JsonResponse
     {
-        $agrupacion = $request->input('agrupacion', 'semanal'); // semanal | mensual
+        $agrupacion = $request->input('agrupacion', 'semanal'); 
         $meses = (int) $request->input('meses', 6);
         $desde = Carbon::now($this->tz)->subMonths($meses)->startOfDay();
         $hasta = Carbon::now($this->tz)->endOfDay();
@@ -225,7 +223,7 @@ class EstadisticasApiController extends Controller
         ]);
     }
 
-    // Obtiene los reportes activos en tiempo real
+    // [Reportes activos en tiempo real]
     public function tiempoReal(Request $request): JsonResponse
     {
         $ahora = Carbon::now($this->tz);
@@ -234,7 +232,6 @@ class EstadisticasApiController extends Controller
             ->whereIn('status', ['abierto', 'en_mantenimiento'])
             ->orderBy('inicio', 'asc');
 
-        // Filtrar por área si viene el parámetro
         if ($request->filled('area_id')) {
             $q->whereHas('maquina.linea.area', fn($aq) => $aq->whereIn('id', explode(',', (string) $request->input('area_id'))));
         }
@@ -275,7 +272,7 @@ class EstadisticasApiController extends Controller
         ]);
     }
 
-    // Obtiene estadisticas desglosadas por area
+    // [Estadisticas desglosadas por area]
     public function porArea(Request $request): JsonResponse
     {
         [$desde, $hasta] = $this->parsePeriodo($request);
@@ -306,7 +303,7 @@ class EstadisticasApiController extends Controller
         ]);
     }
 
-    // Obtiene estadisticas desglosadas de herramentales
+    // [Estadisticas desglosadas por herramental]
     public function herramentales(Request $request): JsonResponse
     {
         [$desde, $hasta] = $this->parsePeriodo($request);
@@ -318,15 +315,12 @@ class EstadisticasApiController extends Controller
 
         $totalFallas = $reportes->count();
 
-        // MTTR herramentales
         $tiemposRep = $reportes->filter(fn($r) => $r->inicio && $r->fin)
             ->map(fn($r) => abs($r->fin->diffInMinutes($r->inicio)));
         $mttrMin = $tiemposRep->isNotEmpty() ? $tiemposRep->avg() : 0;
 
-        // Downtime
         $downtime = $tiemposRep->sum();
 
-        // Top herramentales con más fallos
         $topHerr = $reportes->groupBy('herramental_id')
             ->map(function ($grupo) {
                 $h = $grupo->first()->herramental;
@@ -343,7 +337,6 @@ class EstadisticasApiController extends Controller
             ->take(10)
             ->values();
 
-        // Por máquina
         $porMaquina = $reportes->groupBy('maquina_id')
             ->map(function ($grupo) {
                 $m = $grupo->first()->maquina;
@@ -372,7 +365,7 @@ class EstadisticasApiController extends Controller
         ]);
     }
 
-    // Obtiene estadisticas de rendimiento por tecnico
+    // [Estadisticas de rendimiento por tecnico]
     public function tecnicos(Request $request): JsonResponse
     {
         [$desde, $hasta] = $this->parsePeriodo($request);
@@ -405,7 +398,7 @@ class EstadisticasApiController extends Controller
         ]);
     }
 
-    // Obtiene los catalogos para filtros del frontend
+    // [catalogos para filtros del frontend]
     public function catalogos(): JsonResponse
     {
         $areas = Area::orderBy('name')->get(['id', 'name']);
@@ -433,12 +426,10 @@ class EstadisticasApiController extends Controller
         ]);
     }
 
-    // Endpoint de verificacion de estado de la API
+    // [Verificacion de estado de la API]
     public function health(): JsonResponse
     {
         $ahora = Carbon::now($this->tz);
-
-        // Contar registros recientes (últimas 24h) para confirmar que hay actividad
         $reportes24h = Reporte::where('inicio', '>=', $ahora->copy()->subDay())->count();
 
         return response()->json([
@@ -456,9 +447,9 @@ class EstadisticasApiController extends Controller
         ]);
     }
 
-    // Helpers privados
+    // [Helpers privados]
 
-    // Convierte los query params de fecha en un rango Carbon [desde, hasta]
+    // [Convierte los query params de fecha en un rango Carbon [desde, hasta]]
     private function parsePeriodo(Request $request): array
     {
         if ($request->filled('day')) {
@@ -481,20 +472,16 @@ class EstadisticasApiController extends Controller
                 ?? $request->input('to');
             $hastaInput = $hastaInputRaw === null ? '' : (string) $hastaInputRaw;
 
-            // Mantener consistencia con la app de gráficas: día calendario completo.
             $desde = Carbon::parse($desdeInput, $this->tz)->startOfDay();
 
             if ($hastaInput !== '') {
                 $hasta = Carbon::parse($hastaInput, $this->tz)->endOfDay();
             } elseif ($request->filled('inicio') || $request->filled('fin') || $request->filled('from') || $request->filled('to')) {
-                // Si viene formato tipo día/rango sin fin explícito, cerrar al final del mismo día calendario.
                 $hasta = Carbon::parse($desdeInput, $this->tz)->endOfDay();
             } else {
-                // Compatibilidad hacia atrás para `desde` sin `hasta`.
                 $hasta = Carbon::now($this->tz)->endOfDay();
             }
         } else {
-            // Default: último mes
             $desde = Carbon::now($this->tz)->subMonth()->startOfDay();
             $hasta = Carbon::now($this->tz)->endOfDay();
         }
@@ -502,7 +489,7 @@ class EstadisticasApiController extends Controller
         return [$desde, $hasta];
     }
 
-    // Construye y ejecuta la query base de reportes con filtros opcionales
+    // [Construye y ejecuta la query base de reportes con filtros]
     private function queryReportes(Carbon $desde, Carbon $hasta, ?Request $request = null)
     {
         $q = Reporte::with(['maquina:id,name,linea_id', 'maquina.linea:id,name,area_id', 'maquina.linea.area:id,name'])
@@ -533,7 +520,7 @@ class EstadisticasApiController extends Controller
         return $q->get();
     }
 
-    // Calcula el MTBF global como promedio ponderado de gaps entre fallas por maquina
+    // [Calcula el MTBF global como promedio ponderado de gaps entre fallas por maquina]
     private function calcularMTBFGlobal($reportes): float
     {
         $byMachine = $reportes->groupBy(fn($r) => optional($r->maquina)->id);
@@ -554,7 +541,7 @@ class EstadisticasApiController extends Controller
         return !empty($allGaps) ? array_sum($allGaps) / count($allGaps) : 0;
     }
 
-    // Agrupa reportes por turno y devuelve conteo
+    // [Agrupa reportes por turno y devuelve conteo]
     private function distribucionTurno($reportes): array
     {
         $turnoLabel = fn($t) => match ((string) $t) {
@@ -571,7 +558,7 @@ class EstadisticasApiController extends Controller
             ->toArray();
     }
 
-    // Top 10 líneas por downtime total
+    // [Top 10 líneas por downtime total]
     private function topLineas($reportes, $secToHours): array
     {
         return $reportes->groupBy(fn($r) => optional(optional($r->maquina)->linea)->name)
@@ -586,7 +573,7 @@ class EstadisticasApiController extends Controller
             ->toArray();
     }
 
-    // Top 10 máquinas por downtime total
+    // [Top 10 máquinas por downtime total]
     private function topMaquinas($reportes, $secToHours): array
     {
         return $reportes->groupBy(fn($r) => optional($r->maquina)->name)
@@ -601,7 +588,7 @@ class EstadisticasApiController extends Controller
             ->toArray();
     }
 
-    // Top 10 departamentos por cantidad de fallas
+    // [Top 10 departamentos por cantidad de fallas]
     private function topDepartamentos($reportes): array
     {
         return $reportes->groupBy(fn($r) => $r->departamento)
@@ -633,7 +620,7 @@ class EstadisticasApiController extends Controller
             ->toArray();
     }
 
-    // MTTR promedio por máquina, top 10
+    // [MTTR promedio por máquina, top 10]
     private function mttrPorMaquina($reportes, $secToHours): array
     {
         return $reportes->groupBy(fn($r) => optional($r->maquina)->name)
@@ -653,7 +640,7 @@ class EstadisticasApiController extends Controller
             ->toArray();
     }
 
-    // MTBF promedio por máquina, top 10
+    // [MTBF promedio por máquina, top 10]
     private function mtbfPorMaquina($reportes, $secToHours): array
     {
         $byMachine = $reportes->groupBy(fn($r) => optional($r->maquina)->id);
@@ -683,7 +670,7 @@ class EstadisticasApiController extends Controller
         return collect($result)->sortByDesc('mtbf_horas')->take(10)->values()->toArray();
     }
 
-    // Serie diaria de MTTR y MTBF para graficas de tendencia
+    // [ Diario de MTTR y MTBF para graficas de tendencia]
     private function serieDiaria($reportes, Carbon $desde, Carbon $hasta, $secToHours): array
     {
         $cursor = $desde->copy()->startOfDay();
@@ -712,7 +699,7 @@ class EstadisticasApiController extends Controller
         return $series;
     }
 
-    // Conteo de reportes agrupados por dia
+    // [Conteo de reportes agrupados por dia]
     private function reportesPorDia($reportes): array
     {
         return $reportes->groupBy(fn($r) => $r->inicio ? $r->inicio->format('Y-m-d') : 'unknown')
@@ -729,7 +716,7 @@ class EstadisticasApiController extends Controller
             ->toArray();
     }
 
-    // Envuelve los datos en la estructura de respuesta estandar de la API
+    // [Respuesta estandarizada de la API]
     private function apiResponse(Carbon $desde, Carbon $hasta, array $data): JsonResponse
     {
         return response()->json([

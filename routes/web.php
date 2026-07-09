@@ -4,19 +4,15 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\GraficasController;
 use App\Http\Controllers\ReporteManagementController;
 use App\Http\Controllers\HerramentalStatsController;
-use App\Http\Controllers\ReporteController;
 
-Route::get('/', function () {
-    return view('welcome');
-});
-
-Route::get('/graficas', [GraficasController::class, 'index'])->name('graficas.index');
+// [Dashboard de Reportes]
+Route::get('/', [GraficasController::class, 'index'])->name('graficas.index');
 Route::get('/graficas/export', [GraficasController::class, 'export'])->name('graficas.export');
 
-// Dashboard de estadísticas de herramentales
+// [Dashboard de estadísticas de herramentales]
 Route::get('/herramentales', [HerramentalStatsController::class, 'dashboard'])->name('herramentales.stats');
 
-// Gestión de Reportes (editar/eliminar)
+// [Gestión de Reportes]
 Route::prefix('/reportes')->name('reportes.manage.')->group(function () {
     Route::get('/', [ReporteManagementController::class, 'index'])->name('index');
     Route::get('/{reporte}/edit', [ReporteManagementController::class, 'edit'])->name('edit');
@@ -25,5 +21,3 @@ Route::prefix('/reportes')->name('reportes.manage.')->group(function () {
     Route::delete('/{reporte}', [ReporteManagementController::class, 'destroy'])->name('destroy');
     Route::post('/eliminar-multiples', [ReporteManagementController::class, 'destroyMultiple'])->name('destroy-multiple');
 });
-
-Route::get('/areas/{area}/reportes/descarga-iniciada', [ReporteController::class, 'descargaIniciada'])->name('reportes.descargaIniciada');

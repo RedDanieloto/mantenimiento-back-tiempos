@@ -11,6 +11,8 @@ use Illuminate\Http\Request;
 class GraficasController extends Controller
 {
     private string $tz = 'America/Mexico_City';
+
+    // [Carga el dashboard de gráficas con métricas y filtros]
     public function index(Request $request)
     {
         $areas = Area::orderBy('name')->get(['id','name']);
@@ -48,7 +50,6 @@ class GraficasController extends Controller
             ->take(30)
             ->values();
 
-        // Si no hay ningún filtro de fecha, establecer el mes actual como default
         $monthDefault = $request->input('month');
         if (!$request->filled('day') && !$request->filled('week') && !$request->filled('from') && !$request->filled('to') && !$monthDefault) {
             $monthDefault = Carbon::now($this->tz)->format('Y-m');
@@ -74,6 +75,7 @@ class GraficasController extends Controller
             'metrics' => $metrics,
         ]);
     }
+    // [Exporta los reportes del periodo filtrado a un archivo Excel]
     public function export(Request $request)
     {
         $period = $request->input('day')
@@ -88,6 +90,7 @@ class GraficasController extends Controller
                 'X-Content-Type-Options' => 'nosniff',
             ]);
     }
+    // [Aplica los filtros del request a la query de reportes]
     private function applyFilters(Request $request, $q): void
     {
         if ($request->filled('status')) {
@@ -155,13 +158,13 @@ class GraficasController extends Controller
               
             }
         } else {
-            // Default: mes actual sin parámetro
             $start = Carbon::now($this->tz)->startOfMonth()->startOfDay();
             $end   = (clone $start)->endOfMonth()->endOfDay();
             $q->whereBetween('inicio', [$start, $end]);
         }
     }
 
+    // [Calcula todas las métricas KPI a partir de la colección de reportes]
     private function computeMetrics(Request $request, $reportes): array
     {
     $secToHours = fn($s) => $s === null ? null : max(0, round($s / 3600, 2));

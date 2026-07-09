@@ -8,13 +8,13 @@ use Illuminate\Support\Facades\Validator;
 
 class HerramentalController extends Controller
 {
-    // Obtiene todos los herramentales
+    // [Obtiene todos los herramentales]
     public function index()
     {
         return Herramental::all();
     }
 
-    // Registra un nuevo herramental
+    // [Registra un nuevo herramental]
     public function store(Request $request)
     {
         Validator::make($request->all(), [
@@ -39,7 +39,7 @@ class HerramentalController extends Controller
         ], 201);
     }
 
-    // Actualiza los datos de un herramental
+    // [Actualiza los datos de un herramental]
     public function update(Request $request, Herramental $herramental)
     {
         $data = $request->validate([
@@ -63,7 +63,7 @@ class HerramentalController extends Controller
         ], 200);
     }
 
-    // Muestra un herramental especifico
+    // [Muestra un herramental especifico]
     public function show($id)
     {
         $herramental = Herramental::find($id);
@@ -73,14 +73,14 @@ class HerramentalController extends Controller
         return response()->json($herramental);
     }
 
-    // Elimina un herramental
+    // [Elimina un herramental]
     public function destroy(Herramental $herramental)
     {
         $herramental->delete();
         return response()->json(['message' => 'Herramental eliminado correctamente.'], 200);
     }
 
-    // Obtiene los herramentales de una linea
+    // [Obtiene los herramentales de una linea]
     public function herramentalesPorLinea($linea_id)
     {
         $herramentales = Herramental::where('linea_id', $linea_id)->get();
