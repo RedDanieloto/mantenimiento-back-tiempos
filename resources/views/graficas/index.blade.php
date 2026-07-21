@@ -70,6 +70,25 @@
         .theme-toggle:hover {
             border-color: var(--primary);
         }
+
+        .btn-panel {
+            display: inline-flex;
+            align-items: center;
+            gap: .5rem;
+            background: var(--primary);
+            color: #ffffff !important;
+            border-radius: 8px;
+            padding: .5rem 1rem;
+            font-size: .9rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+        .btn-panel:hover {
+            background: var(--primary-dark);
+            color: #ffffff !important;
+            transform: translateY(-1px);
+        }
         
         .toolbar {
             display: grid;
@@ -487,9 +506,12 @@
 <main class="container">
     <header>
         <h2><i class="bi bi-speedometer2"></i>Gráficas y KPIs</h2>
-        <div class="theme-toggle" onclick="toggleTheme()">
-            <span id="themeIcon"><i class="bi bi-sun"></i></span>
-            <span id="themeLabel">Modo Oscuro</span>
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <a href="https://mantenimiento.danito.tech" class="btn-panel"><i class="bi bi-arrow-left-circle"></i> Regresar al panel</a>
+            <div class="theme-toggle" onclick="toggleTheme()">
+                <span id="themeIcon"><i class="bi bi-sun"></i></span>
+                <span id="themeLabel">Modo Oscuro</span>
+            </div>
         </div>
     </header>
     

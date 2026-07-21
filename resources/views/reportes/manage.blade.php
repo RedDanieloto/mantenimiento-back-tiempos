@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Reportes - Sistema de Mantenimiento</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
             margin: 0;
@@ -437,11 +438,12 @@
         <!-- [Header] -->
         <div class="header">
             <div>
-                <h1>📋 Gestión de Reportes</h1>
+                <h1><i class="fas fa-clipboard-list" style="margin-right: 8px;"></i>Gestión de Reportes</h1>
             </div>
             <div class="header-actions">
-                <a href="{{ route('reportes.manage.index') }}" class="btn btn-secondary">🔄 Actualizar</a>
-                <a href="/" class="btn btn-secondary">← Volver</a>
+                <a href="https://mantenimiento.danito.tech" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Regresar al panel</a>
+                <a href="{{ route('reportes.manage.index') }}" class="btn btn-secondary"><i class="fas fa-sync-alt"></i> Actualizar</a>
+                <a href="/" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Volver</a>
             </div>
         </div>
 
@@ -449,7 +451,7 @@
         @if (session('success'))
             <div style="padding: 20px; padding-top: 25px;">
                 <div class="alert alert-success">
-                    ✓ {{ session('success') }}
+                    <i class="fas fa-check-circle" style="margin-right: 6px;"></i> {{ session('success') }}
                 </div>
             </div>
         @endif
@@ -457,7 +459,7 @@
         @if (session('error'))
             <div style="padding: 20px; padding-top: 25px;">
                 <div class="alert alert-error">
-                    ✗ {{ session('error') }}
+                    <i class="fas fa-times-circle" style="margin-right: 6px;"></i> {{ session('error') }}
                 </div>
             </div>
         @endif
@@ -509,12 +511,12 @@
                         <label for="sort_duration">Ordenar por Duración</label>
                         <select id="sort_duration" name="sort_duration">
                             <option value="">No ordenar</option>
-                            <option value="desc" {{ request('sort_duration') == 'desc' ? 'selected' : '' }}>Mayor a Menor ⬇️</option>
-                            <option value="asc" {{ request('sort_duration') == 'asc' ? 'selected' : '' }}>Menor a Mayor ⬆️</option>
+                            <option value="desc" {{ request('sort_duration') == 'desc' ? 'selected' : '' }}>Mayor a Menor <i class="fas fa-sort-amount-down"></i></option>
+                            <option value="asc" {{ request('sort_duration') == 'asc' ? 'selected' : '' }}>Menor a Mayor <i class="fas fa-sort-amount-up"></i></option>
                         </select>
                     </div>
                     <div class="form-group" style="align-self: flex-end;">
-                        <button type="submit" class="btn btn-primary" style="width: 100%;">🔍 Filtrar</button>
+                        <button type="submit" class="btn btn-primary" style="width: 100%;"><i class="fas fa-search"></i> Filtrar</button>
                     </div>
                 </div>
             </form>
@@ -523,12 +525,12 @@
         <!-- [Menu de acciones masivas] -->
         <div style="padding: 0 25px; padding-top: 20px;">
             <div class="bulk-actions" id="bulkActions">
-                <span class="bulk-count">✓ <span id="selectedCount">0</span> reportes seleccionados</span>
+                <span class="bulk-count"><i class="fas fa-check-square me-1"></i> <span id="selectedCount">0</span> reportes seleccionados</span>
                 <form method="POST" action="{{ route('reportes.manage.destroy-multiple') }}" style="display: flex; gap: 10px;">
                     @csrf
                     <input type="hidden" id="selectedIds" name="ids" value="">
                     <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('¿Estás seguro de que deseas eliminar estos reportes?')">
-                        🗑️ Eliminar Seleccionados
+                        <i class="fas fa-trash-alt me-1"></i> Eliminar Seleccionados
                     </button>
                 </form>
             </div>
@@ -537,8 +539,8 @@
         <!-- [Alternar formato de tiempo] -->
         <div class="time-format-toggle">
             <span class="toggle-label">Mostrar Duración:</span>
-            <button type="button" class="toggle-btn active" onclick="toggleTimeFormat('horas')">📊 Horas</button>
-            <button type="button" class="toggle-btn" onclick="toggleTimeFormat('minutos')">⏱️ Minutos</button>
+            <button type="button" class="toggle-btn active" onclick="toggleTimeFormat('horas')"><i class="fas fa-chart-bar me-1"></i> Horas</button>
+            <button type="button" class="toggle-btn" onclick="toggleTimeFormat('minutos')"><i class="fas fa-stopwatch me-1"></i> Minutos</button>
         </div>
 
         <!-- [Tabla de reportes] -->
@@ -589,8 +591,8 @@
                                     </td>
                                     <td>
                                         <div class="actions">
-                                            <a href="{{ route('reportes.manage.edit', $reporte) }}" class="btn-edit">✏️ Editar</a>
-                                            <a href="{{ route('reportes.manage.confirm-delete', $reporte) }}" class="btn-delete">🗑️ Borrar</a>
+                                            <a href="{{ route('reportes.manage.edit', $reporte) }}" class="btn-edit"><i class="fas fa-pen-to-square"></i> Editar</a>
+                                            <a href="{{ route('reportes.manage.confirm-delete', $reporte) }}" class="btn-delete"><i class="fas fa-trash-can"></i> Borrar</a>
                                         </div>
                                     </td>
                                 </tr>
@@ -602,9 +604,9 @@
                 <!-- [Paginación] -->
                 <div class="pagination">
                     @if ($reportes->onFirstPage())
-                        <span class="disabled">← Anterior</span>
+                        <span class="disabled"><i class="fas fa-chevron-left"></i> Anterior</span>
                     @else
-                        <a href="{{ $reportes->previousPageUrl() }}">← Anterior</a>
+                        <a href="{{ $reportes->previousPageUrl() }}"><i class="fas fa-chevron-left"></i> Anterior</a>
                     @endif
 
                     @php
@@ -636,15 +638,15 @@
                     @endif
 
                     @if ($reportes->hasMorePages())
-                        <a href="{{ $reportes->nextPageUrl() }}">Siguiente →</a>
+                        <a href="{{ $reportes->nextPageUrl() }}">Siguiente <i class="fas fa-chevron-right"></i></a>
                     @else
-                        <span class="disabled">Siguiente →</span>
+                        <span class="disabled">Siguiente <i class="fas fa-chevron-right"></i></span>
                     @endif
                 </div>
             @else
                 <!-- [Estado vacío] -->
                 <div class="empty-state">
-                    <div class="empty-state-icon">📭</div>
+                    <div class="empty-state-icon"><i class="fas fa-inbox"></i></div>
                     <p style="font-size: 16px; margin-bottom: 10px;">No hay reportes para mostrar</p>
                     <p style="font-size: 14px; color: #ccc;">Intenta cambiar los filtros de búsqueda</p>
                 </div>

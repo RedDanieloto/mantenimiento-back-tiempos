@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Confirmar Eliminación - Sistema de Mantenimiento</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
             margin: 0;
@@ -180,7 +181,7 @@
     <div class="dialog-container">
         <!-- [Header] -->
         <div class="dialog-header">
-            <div class="dialog-icon">⚠️</div>
+            <div class="dialog-icon"><i class="fas fa-exclamation-triangle" style="color: #dc3545;"></i></div>
             <div class="dialog-title">Eliminar Reporte</div>
             <div class="dialog-subtitle">Esta acción no se puede deshacer</div>
         </div>
@@ -188,7 +189,7 @@
         <!-- [Info de reporte] -->
         <div class="dialog-body">
             <div class="warning-box">
-                ⚠️ Al eliminar este reporte, se perderán todos los datos relacionados.
+                <i class="fas fa-exclamation-circle" style="margin-right: 4px;"></i> Al eliminar este reporte, se perderán todos los datos relacionados.
                 Esta acción es permanente y no se puede recuperar.
             </div>
 
@@ -237,14 +238,17 @@
 
         <!-- [Menu de acciones] -->
         <div class="dialog-actions">
+            <a href="https://mantenimiento.danito.tech" class="btn btn-cancel" style="background: #6c757d; color: white;">
+                <i class="fas fa-arrow-left"></i> Regresar al panel
+            </a>
             <a href="{{ route('reportes.manage.index') }}" class="btn btn-cancel">
-                ✕ Cancelar
+                <i class="fas fa-xmark"></i> Cancelar
             </a>
             <form method="POST" action="{{ route('reportes.manage.destroy', $reporte) }}" style="flex: 1;">
                 @csrf
                 @method('DELETE')
                 <button type="submit" class="btn btn-confirm" style="width: 100%; margin: 0;">
-                    🗑️ Sí, Eliminar
+                    <i class="fas fa-trash-alt"></i> Sí, Eliminar
                 </button>
             </form>
         </div>

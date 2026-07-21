@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Editar Reporte - Sistema de Mantenimiento</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
             margin: 0;
@@ -320,22 +321,25 @@
 <body>
     <div class="container">
         <!-- [Header] -->
-        <div class="header">
-            <h1>✏️ Editar Reporte #{{ $reporte->id }}</h1>
-            <a href="{{ route('reportes.manage.index') }}" class="btn btn-secondary">← Volver</a>
+        <div class="header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <h1><i class="fas fa-pen-to-square" style="margin-right: 8px;"></i>Editar Reporte #{{ $reporte->id }}</h1>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <a href="https://mantenimiento.danito.tech" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Regresar al panel</a>
+                <a href="{{ route('reportes.manage.index') }}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Volver</a>
+            </div>
         </div>
 
         <!-- [Content] -->
         <div class="content">
             @if ($errors->any())
                 <div class="alert alert-danger">
-                    ✗ Por favor revisa los errores abajo
+                    <i class="fas fa-exclamation-circle" style="margin-right: 6px;"></i> Por favor revisa los errores abajo
                 </div>
             @endif
 
             <!-- [Info de reporte] -->
             <div class="info-box">
-                📌 Máquina: <strong>{{ $reporte->maquina->name ?? 'N/A' }}</strong> | 
+                <i class="fas fa-map-marker-alt" style="margin-right: 4px;"></i> Máquina: <strong>{{ $reporte->maquina->name ?? 'N/A' }}</strong> | 
                 Área: <strong>{{ optional(optional($reporte->maquina)->linea)->area->name ?? 'N/A' }}</strong> |
                 Reportado por: <strong>{{ $reporte->lider_nombre ?? 'Desconocido' }}</strong>
             </div>
@@ -346,7 +350,7 @@
 
                 <!-- [Sección: Tiempos] -->
                 <div class="form-section">
-                    <div class="section-title">⏱️ Tiempos</div>
+                    <div class="section-title"><i class="fas fa-stopwatch" style="margin-right: 8px;"></i>Tiempos</div>
                     <div class="form-row">
                         <div class="form-group">
                             <label for="inicio">Inicio del Paro *</label>
@@ -394,7 +398,7 @@
 
                 <!-- [Sección: Estado] -->
                 <div class="form-section">
-                    <div class="section-title">📊 Estado</div>
+                    <div class="section-title"><i class="fas fa-tasks" style="margin-right: 8px;"></i>Estado</div>
                     <div class="form-row">
                         <div class="form-group">
                             <label for="status">Estado del Reporte *</label>
@@ -428,7 +432,7 @@
 
                 <!-- [Sección: Detalles] -->
                 <div class="form-section">
-                    <div class="section-title">📝 Detalles</div>
+                    <div class="section-title"><i class="fas fa-file-alt" style="margin-right: 8px;"></i>Detalles</div>
                     <div class="form-group">
                         <label for="descripcion_falla">Descripción de la Falla *</label>
                         <textarea id="descripcion_falla" name="descripcion_falla" required>{{ $reporte->descripcion_falla }}</textarea>
@@ -466,10 +470,10 @@
                 <!-- [Sección: Resumen de Tiempos] -->
                 @if ($reporte->fin)
                     <div class="form-section">
-                        <div class="section-title">📈 Resumen de Tiempos</div>
+                        <div class="section-title"><i class="fas fa-chart-line" style="margin-right: 8px;"></i>Resumen de Tiempos</div>
                         <div class="time-toggle">
-                            <button type="button" class="toggle-btn active" onclick="toggleTimeFormat('horas')">📊 Horas</button>
-                            <button type="button" class="toggle-btn" onclick="toggleTimeFormat('minutos')">⏱️ Minutos</button>
+                            <button type="button" class="toggle-btn active" onclick="toggleTimeFormat('horas')"><i class="fas fa-chart-bar" style="margin-right: 4px;"></i> Horas</button>
+                            <button type="button" class="toggle-btn" onclick="toggleTimeFormat('minutos')"><i class="fas fa-stopwatch" style="margin-right: 4px;"></i> Minutos</button>
                         </div>
                         <div class="time-info">
                             <div class="time-item">
@@ -496,8 +500,8 @@
 
                 <!-- [Menu de Acciones] -->
                 <div class="form-actions">
-                    <button type="submit" class="btn-save">💾 Guardar Cambios</button>
-                    <a href="{{ route('reportes.manage.index') }}" class="btn-cancel">✕ Cancelar</a>
+                    <button type="submit" class="btn-save"><i class="fas fa-save" style="margin-right: 6px;"></i>Guardar Cambios</button>
+                    <a href="{{ route('reportes.manage.index') }}" class="btn-cancel"><i class="fas fa-xmark" style="margin-right: 6px;"></i>Cancelar</a>
                 </div>
             </form>
         </div>
