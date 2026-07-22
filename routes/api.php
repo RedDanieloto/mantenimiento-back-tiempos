@@ -10,7 +10,6 @@ use App\Http\Controllers\LineaController;
 use App\Http\Controllers\HerramentalController;
 use App\Http\Controllers\HerramentalStatsController;
 use App\Http\Controllers\EstadisticasApiController;
-
 // Rutas de usuarios
 Route::get('/user', [UserController::class, 'index']);
 Route::post('/user', [UserController::class, 'store']);
@@ -18,8 +17,6 @@ Route::put('/user/{id}', [UserController::class, 'update']);
 Route::get('/user/{id}', [UserController::class, 'show']);
 Route::delete('/user/{id}', [UserController::class, 'destroy']);
 
-// Rutas de reportes por area
-Route::get('/reportesTotales', [ReporteController::class,'pendientesTotales']);
 Route::prefix('/areas/{area}')->group(function () {
     Route::get('/reportes', [ReporteController::class, 'indexByArea']);
     Route::get('/reportes/pendientes', [ReporteController::class, 'pendientesByArea']);
@@ -34,6 +31,7 @@ Route::get('/reportes', [ReporteController::class, 'index']);
 Route::post('/reportes', [ReporteController::class, 'store']);
 Route::post('/reportes/{reporte}/aceptar', [ReporteController::class, 'accept']);
 Route::post('/reportes/{reporte}/finalizar', [ReporteController::class, 'finish']);
+Route::get('/reportesTotales', [ReporteController::class, 'pendientesTotales']);
 
 // Rutas de lineas
 Route::get('/lineas', [LineaController::class, 'index']);
