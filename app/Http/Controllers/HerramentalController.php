@@ -5,13 +5,15 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Herramental;
 use Illuminate\Support\Facades\Validator;
+use App\Models\Linea;
 
 class HerramentalController extends Controller
 {
     // [Obtiene todos los herramentales]
     public function index()
     {
-        return Herramental::all();
+        return Herramental::all()
+            ->load('linea:id,name');
     }
 
     // [Registra un nuevo herramental]
