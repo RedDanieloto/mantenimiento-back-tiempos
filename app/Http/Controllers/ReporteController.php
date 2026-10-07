@@ -318,6 +318,16 @@ class ReporteController extends Controller
             'maquina_id'        => 'required|integer|exists:maquinas,id',
             'turno'             => 'required|string|',
             'descripcion_falla' => 'required|string',
+            'departamento'          => [
+                'required',
+                'string',
+                function ($attribute, $value, $fail) {
+                    $trimmed = trim((string)$value);
+                    if ($trimmed === '-' || $trimmed === '—' || $trimmed === '--' || !preg_match('/[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ]/', $trimmed) || in_array(strtolower($trimmed), ['n/a', 'na', 'none', 'null', 'sin departamento'])) {
+                        $fail('El departamento especificado no es válido.');
+                    }
+                }
+            ],
             'herramental_id'    => 'nullable|integer|exists:herramentals,id',
         ])->validate();
         $creator = User::where('employee_number', $data['employee_number'])->firstOrFail();
@@ -362,7 +372,7 @@ class ReporteController extends Controller
                     'maquina_id'              => $maquina->id,
                     'status'                  => 'abierto',
                     'falla'                   => 'por definir',
-                    'departamento'            => null,
+                    'departamento'            => $data['departamento'],
                     'turno'                   => $data['turno'],
                     'descripcion_falla'       => $data['descripcion_falla'],
                     'herramental_id'          => $data['herramental_id'] ?? null,
@@ -431,10 +441,11 @@ class ReporteController extends Controller
             'descripcion_resultado' => 'required|string',
             'refaccion_utilizada'   => 'nullable|string',
             'departamento'          => [
-                'required',
+                $reporte->departamento ? 'nullable' : 'required',
                 'string',
                 function ($attribute, $value, $fail) {
                     $trimmed = trim((string)$value);
+                    if ($trimmed === '') return;
                     if ($trimmed === '-' || $trimmed === '—' || $trimmed === '--' || !preg_match('/[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ]/', $trimmed) || in_array(strtolower($trimmed), ['n/a', 'na', 'none', 'null', 'sin departamento'])) {
                         $fail('El departamento especificado no es válido.');
                     }
@@ -447,10 +458,12 @@ class ReporteController extends Controller
             return response()->json(['message' => 'El reporte ya está finalizado.'], 409);
         }
 
+        $departamentoFinal = !empty($data['departamento']) ? trim((string)$data['departamento']) : $reporte->departamento;
+
         $reporte->update([
             'descripcion_resultado' => $data['descripcion_resultado'],
             'refaccion_utilizada'   => $data['refaccion_utilizada'] ?? null,
-            'departamento'          => $data['departamento'],
+            'departamento'          => $departamentoFinal,
             'scrap'                 => $data['scrap'] ?? $reporte->scrap,
             'status'                => 'OK',
             'fin'                   => now(),
@@ -609,6 +622,17 @@ class ReporteController extends Controller
             'maquina_id'        => 'required|integer|exists:maquinas,id',
             'turno'             => 'required|string',
             'descripcion_falla' => 'required|string',
+            'departamento'      => [
+                'required',
+                'string',
+                function ($attribute, $value, $fail) {
+                    $trimmed = trim((string)$value);
+                    if ($trimmed === '-' || $trimmed === '—' || $trimmed === '--' || !preg_match('/[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ]/', $trimmed) || in_array(strtolower($trimmed), ['n/a', 'na', 'none', 'null', 'sin departamento'])) {
+                        $fail('El departamento especificado no es válido.');
+                    }
+                }
+            ],
+            'herramental_id'    => 'nullable|integer|exists:herramentals,id',
         ])->validate();
         $maquina = Maquina::with('linea.area')->findOrFail($data['maquina_id']);
         $areaIdDeMaquina = optional(optional($maquina->linea)->area)->id;

@@ -53,7 +53,8 @@ class ReporteHerramentalTest extends TestCase
             'employee_number' => $this->lider->employee_number,
             'maquina_id' => $this->maquina->id,
             'turno' => 'A',
-            'descripcion_falla' => 'Falla de prueba'
+            'descripcion_falla' => 'Falla de prueba',
+            'departamento' => 'Mantenimiento'
         ]);
 
         $response->assertStatus(201)
@@ -80,6 +81,7 @@ class ReporteHerramentalTest extends TestCase
             'turno' => 'A',
             'descripcion_falla' => 'Falla de herramental',
             'herramental_id' => $this->herramental->id,
+            'departamento' => 'Mantenimiento'
         ]);
 
         $responseCreate->assertStatus(201)
@@ -200,6 +202,7 @@ class ReporteHerramentalTest extends TestCase
             'turno' => 'A',
             'descripcion_falla' => 'Falla de herramental',
             'herramental_id' => 99999, // ID inexistente
+            'departamento' => 'Mantenimiento'
         ]);
 
         $response->assertStatus(422)
@@ -215,6 +218,7 @@ class ReporteHerramentalTest extends TestCase
             'maquina_id' => $this->maquina->id,
             'turno' => 'A',
             'descripcion_falla' => 'Falla sin herramental',
+            'departamento' => 'Mantenimiento'
         ]);
 
         $responseCreate->assertStatus(201);
@@ -254,7 +258,8 @@ class ReporteHerramentalTest extends TestCase
             'employee_number' => $this->lider->employee_number,
             'maquina_id' => $this->maquina->id,
             'turno' => 'A',
-            'descripcion_falla' => 'Falla general'
+            'descripcion_falla' => 'Falla general',
+            'departamento' => 'Mantenimiento'
         ])->assertStatus(201);
 
         // 2. Crear reporte con herramental (debe permitirse)
@@ -263,7 +268,8 @@ class ReporteHerramentalTest extends TestCase
             'maquina_id' => $this->maquina->id,
             'turno' => 'A',
             'descripcion_falla' => 'Falla de herramental',
-            'herramental_id' => $this->herramental->id
+            'herramental_id' => $this->herramental->id,
+            'departamento' => 'Mantenimiento'
         ])->assertStatus(201);
     }
 
@@ -276,7 +282,8 @@ class ReporteHerramentalTest extends TestCase
             'maquina_id' => $this->maquina->id,
             'turno' => 'A',
             'descripcion_falla' => 'Falla de herramental',
-            'herramental_id' => $this->herramental->id
+            'herramental_id' => $this->herramental->id,
+            'departamento' => 'Mantenimiento'
         ])->assertStatus(201);
 
         // 2. Crear reporte sin herramental (debe permitirse)
@@ -284,7 +291,8 @@ class ReporteHerramentalTest extends TestCase
             'employee_number' => $this->lider->employee_number,
             'maquina_id' => $this->maquina->id,
             'turno' => 'A',
-            'descripcion_falla' => 'Falla general'
+            'descripcion_falla' => 'Falla general',
+            'departamento' => 'Mantenimiento'
         ])->assertStatus(201);
     }
 
@@ -296,14 +304,16 @@ class ReporteHerramentalTest extends TestCase
             'employee_number' => $this->lider->employee_number,
             'maquina_id' => $this->maquina->id,
             'turno' => 'A',
-            'descripcion_falla' => 'Falla general 1'
+            'descripcion_falla' => 'Falla general 1',
+            'departamento' => 'Mantenimiento'
         ])->assertStatus(201);
 
         $this->postJson('/api/reportes', [
             'employee_number' => $this->lider->employee_number,
             'maquina_id' => $this->maquina->id,
             'turno' => 'A',
-            'descripcion_falla' => 'Falla general 2'
+            'descripcion_falla' => 'Falla general 2',
+            'departamento' => 'Mantenimiento'
         ])->assertStatus(422);
     }
 
@@ -316,7 +326,8 @@ class ReporteHerramentalTest extends TestCase
             'maquina_id' => $this->maquina->id,
             'turno' => 'A',
             'descripcion_falla' => 'Falla herramental 1',
-            'herramental_id' => $this->herramental->id
+            'herramental_id' => $this->herramental->id,
+            'departamento' => 'Mantenimiento'
         ])->assertStatus(201);
 
         $this->postJson('/api/reportes', [
@@ -324,7 +335,8 @@ class ReporteHerramentalTest extends TestCase
             'maquina_id' => $this->maquina->id,
             'turno' => 'A',
             'descripcion_falla' => 'Falla herramental 2',
-            'herramental_id' => $this->herramental->id
+            'herramental_id' => $this->herramental->id,
+            'departamento' => 'Mantenimiento'
         ])->assertStatus(422);
     }
 
@@ -339,7 +351,8 @@ class ReporteHerramentalTest extends TestCase
             'employee_number' => $this->lider->employee_number,
             'maquina_id' => $this->maquina->id,
             'turno' => 'A',
-            'descripcion_falla' => 'Falla concurrente'
+            'descripcion_falla' => 'Falla concurrente',
+            'departamento' => 'Mantenimiento'
         ]);
 
         $response->assertStatus(422)
@@ -408,6 +421,98 @@ class ReporteHerramentalTest extends TestCase
         ]);
 
         $response->assertSessionHasErrors(['departamento']);
+    }
+
+    /** @test */
+    public function no_permite_crear_reporte_sin_departamento_o_con_departamento_invalido()
+    {
+        // Sin departamento
+        $response = $this->postJson('/api/reportes', [
+            'employee_number' => $this->lider->employee_number,
+            'maquina_id' => $this->maquina->id,
+            'turno' => 'A',
+            'descripcion_falla' => 'Falla sin depto'
+        ]);
+        $response->assertStatus(422)->assertJsonValidationErrors(['departamento']);
+
+        // Con departamento inválido "-"
+        $response2 = $this->postJson('/api/reportes', [
+            'employee_number' => $this->lider->employee_number,
+            'maquina_id' => $this->maquina->id,
+            'turno' => 'A',
+            'descripcion_falla' => 'Falla con guion',
+            'departamento' => '-'
+        ]);
+        $response2->assertStatus(422)->assertJsonValidationErrors(['departamento']);
+    }
+
+    /** @test */
+    public function tecnico_puede_modificar_departamento_al_finalizar()
+    {
+        $responseCreate = $this->postJson('/api/reportes', [
+            'employee_number' => $this->lider->employee_number,
+            'maquina_id' => $this->maquina->id,
+            'turno' => 'A',
+            'descripcion_falla' => 'Falla reporte',
+            'departamento' => 'Producción'
+        ]);
+        $responseCreate->assertStatus(201);
+        $reporteId = $responseCreate->json('id');
+
+        $this->assertDatabaseHas('reportes', [
+            'id' => $reporteId,
+            'departamento' => 'Producción'
+        ]);
+
+        $this->postJson("/api/reportes/{$reporteId}/aceptar", [
+            'tecnico_employee_number' => $this->tecnico->employee_number
+        ]);
+
+        $responseFinish = $this->postJson("/api/reportes/{$reporteId}/finalizar", [
+            'descripcion_resultado' => 'Reparado en Mantenimiento',
+            'refaccion_utilizada' => 'Fusible',
+            'departamento' => 'Mantenimiento'
+        ]);
+
+        $responseFinish->assertStatus(200);
+
+        $this->assertDatabaseHas('reportes', [
+            'id' => $reporteId,
+            'departamento' => 'Mantenimiento',
+            'status' => 'OK'
+        ]);
+    }
+
+    /** @test */
+    public function tecnico_conserva_departamento_del_lider_si_no_lo_modifica()
+    {
+        $responseCreate = $this->postJson('/api/reportes', [
+            'employee_number' => $this->lider->employee_number,
+            'maquina_id' => $this->maquina->id,
+            'turno' => 'A',
+            'descripcion_falla' => 'Falla reporte',
+            'departamento' => 'Calidad'
+        ]);
+        $responseCreate->assertStatus(201);
+        $reporteId = $responseCreate->json('id');
+
+        $this->postJson("/api/reportes/{$reporteId}/aceptar", [
+            'tecnico_employee_number' => $this->tecnico->employee_number
+        ]);
+
+        // Finaliza sin enviar departamento
+        $responseFinish = $this->postJson("/api/reportes/{$reporteId}/finalizar", [
+            'descripcion_resultado' => 'Reparado',
+            'refaccion_utilizada' => 'N/A'
+        ]);
+
+        $responseFinish->assertStatus(200);
+
+        $this->assertDatabaseHas('reportes', [
+            'id' => $reporteId,
+            'departamento' => 'Calidad',
+            'status' => 'OK'
+        ]);
     }
 }
 
